@@ -8,11 +8,6 @@ interface ConfigPanelProps {
   config: GameConfig;
   onConfigChange: (config: GameConfig) => void;
   onClose: () => void;
-  onRegenerate: () => void;
-  showGrid: boolean;
-  onToggleGrid: () => void;
-  dungeonCount: number;
-  roomCount: number;
   getWorldData: () => WorldData | null;
   onLoadWorld: (data: WorldData) => void;
 }
@@ -23,40 +18,15 @@ interface SavedWorldSummary {
   updatedAt: string;
 }
 
-type NumericFieldKey =
-  | 'mapWidth'
-  | 'mapHeight'
-  | 'tilePixelSize'
-  | 'seed'
-  | 'cityWidth'
-  | 'cityHeight'
-  | 'minRoomSize'
-  | 'minRoomsPerDungeon'
-  | 'maxRoomsPerDungeon';
+type NumericFieldKey = 'seed';
 
 const FIELD_BOUNDS: Record<NumericFieldKey, { min: number; max: number }> = {
-  mapWidth: { min: 24, max: 400 },
-  mapHeight: { min: 24, max: 400 },
-  tilePixelSize: { min: 8, max: 32 },
   seed: { min: 1, max: 2147483647 },
-  cityWidth: { min: 4, max: 200 },
-  cityHeight: { min: 4, max: 200 },
-  minRoomSize: { min: 3, max: 30 },
-  minRoomsPerDungeon: { min: 2, max: 20 },
-  maxRoomsPerDungeon: { min: 2, max: 25 },
 };
 
 function draftsFromConfig(config: GameConfig): Record<NumericFieldKey, string> {
   return {
-    mapWidth: String(config.mapWidth),
-    mapHeight: String(config.mapHeight),
-    tilePixelSize: String(config.tilePixelSize),
     seed: String(config.seed),
-    cityWidth: String(config.cityWidth),
-    cityHeight: String(config.cityHeight),
-    minRoomSize: String(config.minRoomSize),
-    minRoomsPerDungeon: String(config.minRoomsPerDungeon),
-    maxRoomsPerDungeon: String(config.maxRoomsPerDungeon),
   };
 }
 
@@ -65,11 +35,6 @@ export function ConfigPanel({
   config,
   onConfigChange,
   onClose,
-  onRegenerate,
-  showGrid,
-  onToggleGrid,
-  dungeonCount,
-  roomCount,
   getWorldData,
   onLoadWorld,
 }: ConfigPanelProps) {
@@ -139,10 +104,6 @@ export function ConfigPanel({
   const handleClose = () => {
     setSaveMsg(null);
     onClose();
-  };
-
-  const handleCheckboxChange = (key: 'includeCity', value: boolean) => {
-    onConfigChange({ ...config, [key]: value });
   };
 
   const handleReset = () => {
@@ -257,22 +218,6 @@ export function ConfigPanel({
     }
     const { min, max } = FIELD_BOUNDS[key];
     const clamped = Math.min(max, Math.max(min, parsed));
-    // Guard room-count and room-size ranges.
-    if (key === 'minRoomsPerDungeon') {
-      const fixed = Math.min(clamped, config.maxRoomsPerDungeon);
-      setDrafts((prev) => ({ ...prev, [key]: String(fixed) }));
-      if (fixed !== config[key]) {
-        onConfigChange({ ...config, [key]: fixed });
-      }
-      return;
-    } else if (key === 'maxRoomsPerDungeon') {
-      const fixed = Math.max(clamped, config.minRoomsPerDungeon);
-      setDrafts((prev) => ({ ...prev, [key]: String(fixed) }));
-      if (fixed !== config[key]) {
-        onConfigChange({ ...config, [key]: fixed });
-      }
-      return;
-    }
     setDrafts((prev) => ({ ...prev, [key]: String(clamped) }));
     if (clamped !== config[key]) {
       onConfigChange({ ...config, [key]: clamped });
@@ -333,15 +278,10 @@ export function ConfigPanel({
 
         {/* Content */}
         <div className="p-4 space-y-6">
-          {/* Map Settings */}
+          {/* Seed */}
           <section>
-            <h3 className="text-lg font-semibold text-amber-200 mb-3">Map Settings</h3>
+            <h3 className="text-lg font-semibold text-amber-200 mb-3">Seed</h3>
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                {renderNumberRow('mapWidth', 'Map Width (tiles)')}
-                {renderNumberRow('mapHeight', 'Map Height (tiles)')}
-                {renderNumberRow('tilePixelSize', 'Tile Size (px)')}
-              </div>
               <div className="flex items-end gap-2">
                 <div className="flex-1">{renderNumberRow('seed', 'Seed')}</div>
                 <button
@@ -355,93 +295,6 @@ export function ConfigPanel({
               <p className="text-xs text-gray-500">
                 Same seed + settings always yields the same map.
               </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="showGrid"
-                  checked={showGrid}
-                  onChange={onToggleGrid}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="showGrid" className="text-sm text-gray-300">
-                  Show Grid
-                </label>
-              </div>
-            </div>
-          </section>
-
-          {/* City Settings */}
-          <section>
-            <h3 className="text-lg font-semibold text-amber-200 mb-3">City Settings</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="includeCity"
-                  checked={config.includeCity}
-                  onChange={(e) => handleCheckboxChange('includeCity', e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="includeCity" className="text-sm text-gray-300">
-                  Include City in Center
-                </label>
-              </div>
-              {config.includeCity && (
-                <div className="grid grid-cols-2 gap-3">
-                  {renderNumberRow('cityWidth', 'City Width')}
-                  {renderNumberRow('cityHeight', 'City Height')}
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Dungeon Settings */}
-          <section>
-            <h3 className="text-lg font-semibold text-amber-200 mb-3">Dungeon Settings</h3>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                {renderNumberRow('minRoomSize', 'Min Room Size')}
-                {renderNumberRow('minRoomsPerDungeon', 'Min Rooms')}
-                {renderNumberRow('maxRoomsPerDungeon', 'Max Rooms (incl. boss)')}
-              </div>
-              <p className="text-xs text-gray-500">
-                Min room size is the smallest playable floor — room for the
-                party plus monsters to move and fight. No fixed dungeon count:
-                dungeons pack into the space around the city until what is left
-                is too small for even one minimum-size room.
-              </p>
-              <p className="text-sm text-gray-400">
-                Dungeons on map:{' '}
-                <span className="text-amber-100 font-semibold">{dungeonCount}</span>
-                {' · '}
-                Rooms:{' '}
-                <span className="text-amber-100 font-semibold">{roomCount}</span>
-                {' · '}
-                <span className="text-gray-500">every tile used</span>
-              </p>
-              {dungeonCount === 0 && (
-                <p className="text-sm text-red-300">
-                  Nothing fits — enlarge the map or shrink the city / min room size.
-                </p>
-              )}
-              <button
-                onClick={onRegenerate}
-                className="w-full px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors flex items-center justify-center gap-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Generate Map
-              </button>
             </div>
           </section>
 

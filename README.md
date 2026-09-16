@@ -14,7 +14,7 @@ Playable world viewer (no combat yet):
   centered city with buildings, regions strip-packed with dungeons, BSP rooms
   per dungeon, entrance → … → largest-room-as-boss chains + corridors
 - PixiJS 7 canvas renderer: pan (drag), zoom (wheel / double-click), centered + resize-aware
-- Config panel for live world tuning: map size, tile size, seed, city, min room size, rooms per dungeon
+- Config panel: seed (+ randomize) and Save / Load; all map/city/dungeon sizes are fixed in `DEFAULT_CONFIG`
 - Classless stats / skills / combat design docs under `docs/` (brainstorm, not implemented)
 
 ## Vision
@@ -61,16 +61,16 @@ npm run lint
 
 - **Drag** — pan camera
 - **Wheel / double-click** — zoom (0.5×–3×)
-- **Top menu → Config** — open world-gen panel (Generate Map, randomize seed)
+- **Top menu → Config** — open panel (seed, randomize, save/load)
 
 ## World-Gen Config (`src/game/types.ts`)
 
 | Key | Default | Meaning |
 |---|---|---|
-| `mapWidth / mapHeight` | 60 × 40 | world size in tiles |
+| `mapWidth / mapHeight` | 384 × 216 | world size in tiles |
 | `tilePixelSize` | 16 | px per tile |
 | `seed` | 1337 | deterministic seed (same seed + settings = same map) |
-| `includeCity / cityWidth / cityHeight` | true / 14 / 14 | centered city with buildings |
+| `includeCity / cityWidth / cityHeight` | true / 128 / 72 | centered city with buildings |
 | `minRoomSize` | 7 | smallest playable room floor, in tiles |
 | `minRoomsPerDungeon / maxRoomsPerDungeon` | 4 / 7 | rooms per dungeon, incl. boss (largest room) |
 

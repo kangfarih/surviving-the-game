@@ -9,9 +9,7 @@ import { GameConfig, DEFAULT_CONFIG, WorldData } from '@/game/types';
 export default function Home() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [config, setConfig] = useState<GameConfig>(DEFAULT_CONFIG);
-  const [showGrid, setShowGrid] = useState(false);
-  const [dungeonCount, setDungeonCount] = useState(0);
-  const [roomCount, setRoomCount] = useState(0);
+  const [showGrid] = useState(false);
   const [boot, setBoot] = useState<{ done: boolean; world: WorldData | null }>({
     done: false,
     world: null,
@@ -58,8 +56,6 @@ export default function Home() {
         if (cancelled) return;
         if (world) {
           setConfig({ ...world.config });
-          setDungeonCount(world.dungeons.length);
-          setRoomCount(world.dungeons.reduce((n, d) => n + d.rooms.length, 0));
           setBoot({ done: true, world });
         } else {
           setBoot({ done: true, world: null });
@@ -76,19 +72,6 @@ export default function Home() {
     };
   }, []);
 
-  const refreshCounts = () => {
-    const data = gameCanvasRef.current?.getWorldData();
-    if (!data) return;
-    setDungeonCount(data.dungeons.length);
-    setRoomCount(data.dungeons.reduce((n, d) => n + d.rooms.length, 0));
-  };
-
-  // Regenerate the whole world from seed + config (same seed = same map).
-  const handleRegenerate = () => {
-    gameCanvasRef.current?.regenerate();
-    refreshCounts();
-  };
-
   const handleConfigChange = (newConfig: GameConfig) => {
     setConfig(newConfig);
   };
@@ -100,8 +83,6 @@ export default function Home() {
   const handleLoadWorld = (data: WorldData) => {
     gameCanvasRef.current?.loadWorldData(data);
     setConfig({ ...data.config });
-    setDungeonCount(data.dungeons.length);
-    setRoomCount(data.dungeons.reduce((n, d) => n + d.rooms.length, 0));
   };
 
   return (
@@ -124,10 +105,6 @@ export default function Home() {
             config={config}
             showGrid={showGrid}
             initialWorldData={boot.world}
-            onStats={(dungeons, rooms) => {
-              setDungeonCount(dungeons);
-              setRoomCount(rooms);
-            }}
           />
         )}
       </div>
@@ -138,11 +115,6 @@ export default function Home() {
         config={config}
         onConfigChange={handleConfigChange}
         onClose={() => setIsConfigOpen(false)}
-        onRegenerate={handleRegenerate}
-        showGrid={showGrid}
-        onToggleGrid={() => setShowGrid((prev) => !prev)}
-        dungeonCount={dungeonCount}
-        roomCount={roomCount}
         getWorldData={getWorldData}
         onLoadWorld={handleLoadWorld}
       />
