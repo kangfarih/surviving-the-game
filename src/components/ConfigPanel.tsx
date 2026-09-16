@@ -1,24 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
-import { GameConfig, DEFAULT_CONFIG } from '@/game/types';
+import React, { useEffect, useState } from 'react';
+import { GameConfig, DEFAULT_CONFIG, WorldData } from '@/game/types';
 
 interface ConfigPanelProps {
   isOpen: boolean;
   config: GameConfig;
   onConfigChange: (config: GameConfig) => void;
   onClose: () => void;
-  onGenerate: () => void;
+  onGenerate: () => boolean;
+  onDeleteDungeon: () => boolean;
   showGrid: boolean;
   onToggleGrid: () => void;
+  dungeonCount: number;
+  getWorldData: () => WorldData | null;
+  onLoadWorld: (data: WorldData) => void;
+}
+
+interface SavedWorldSummary {
+  id: string;
+  name: string | null;
+  updatedAt: string;
 }
 
 type NumericFieldKey =
   | 'mapWidth'
   | 'mapHeight'
   | 'tilePixelSize'
-  | 'citySize'
-  | 'dungeonCount'
+  | 'cityWidth'
+  | 'cityHeight'
   | 'roomsPerDungeon'
   | 'minRoomSize'
   | 'maxRoomSize'
@@ -28,8 +38,8 @@ const FIELD_BOUNDS: Record<NumericFieldKey, { min: number; max: number }> = {
   mapWidth: { min: 50, max: 200 },
   mapHeight: { min: 50, max: 200 },
   tilePixelSize: { min: 8, max: 32 },
-  citySize: { min: 10, max: 40 },
-  dungeonCount: { min: 1, max: 8 },
+  cityWidth: { min: 10, max: 40 },
+  cityHeight: { min: 10, max: 40 },
   roomsPerDungeon: { min: 3, max: 15 },
   minRoomSize: { min: 3, max: 8 },
   maxRoomSize: { min: 8, max: 20 },
@@ -41,8 +51,8 @@ function draftsFromConfig(config: GameConfig): Record<NumericFieldKey, string> {
     mapWidth: String(config.mapWidth),
     mapHeight: String(config.mapHeight),
     tilePixelSize: String(config.tilePixelSize),
-    citySize: String(config.citySize),
-    dungeonCount: String(config.dungeonCount),
+    cityWidth: String(config.cityWidth),
+    cityHeight: String(config.cityHeight),
     roomsPerDungeon: String(config.roomsPerDungeon),
     minRoomSize: String(config.minRoomSize),
     maxRoomSize: String(config.maxRoomSize),
@@ -56,13 +66,23 @@ export function ConfigPanel({
   onConfigChange,
   onClose,
   onGenerate,
+  onDeleteDungeon,
   showGrid,
   onToggleGrid,
+  dungeonCount,
+  getWorldData,
+  onLoadWorld,
 }: ConfigPanelProps) {
   const [drafts, setDrafts] = useState<Record<NumericFieldKey, string>>(() =>
     draftsFromConfig(config),
   );
   const [prevConfig, setPrevConfig] = useState(config);
+  const [dungeonMsg, setDungeonMsg] = useState<string | null>(null);
+  const [worldName, setWorldName] = useState('');
+  const [savedWorlds, setSavedWorlds] = useState<SavedWorldSummary[]>([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Sync local drafts when the config prop changes (e.g. Reset to Default).
   if (prevConfig !== config) {
@@ -70,7 +90,58 @@ export function ConfigPanel({
     setDrafts(draftsFromConfig(config));
   }
 
+  const fetchWorlds = async () => {
+    try {
+      const res = await fetch('/api/worlds');
+      if (!res.ok) {
+        setSaveMsg('Could not load saved worlds.');
+        return;
+      }
+      const json = (await res.json()) as { worlds?: SavedWorldSummary[] };
+      const list = Array.isArray(json.worlds) ? json.worlds : [];
+      setSavedWorlds(list);
+      setSelectedId((prev) =>
+        prev && list.some((w) => w.id === prev) ? prev : (list[0]?.id ?? ''),
+      );
+    } catch {
+      setSaveMsg('Could not load saved worlds.');
+    }
+  };
+
+  // Self-contained save/load: refresh the list every time the panel opens.
+  // (Message resets live in handleClose so the effect body never calls
+  // setState synchronously.)
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    fetch('/api/worlds')
+      .then((res) => {
+        if (!res.ok) throw new Error('load failed');
+        return res.json() as Promise<{ worlds?: SavedWorldSummary[] }>;
+      })
+      .then((json) => {
+        if (cancelled) return;
+        const list = Array.isArray(json.worlds) ? json.worlds : [];
+        setSavedWorlds(list);
+        setSelectedId((prev) =>
+          prev && list.some((w) => w.id === prev) ? prev : (list[0]?.id ?? ''),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setSaveMsg('Could not load saved worlds.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    setDungeonMsg(null);
+    setSaveMsg(null);
+    onClose();
+  };
 
   const handleCheckboxChange = (key: 'includeCity', value: boolean) => {
     onConfigChange({ ...config, [key]: value });
@@ -78,6 +149,106 @@ export function ConfigPanel({
 
   const handleReset = () => {
     onConfigChange(DEFAULT_CONFIG);
+  };
+
+  const handleGenerateDungeon = () => {
+    const ok = onGenerate();
+    setDungeonMsg(
+      ok ? null : 'No space left on the map — delete a dungeon first.',
+    );
+  };
+
+  const handleDeleteDungeon = () => {
+    const ok = onDeleteDungeon();
+    setDungeonMsg(ok ? null : 'No dungeons to delete.');
+  };
+
+  const handleSave = async () => {
+    setSaveMsg(null);
+    const data = getWorldData();
+    if (!data) {
+      setSaveMsg('Nothing to save yet.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/worlds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: worldName.trim() === '' ? null : worldName.trim(),
+          config: data.config,
+          dungeons: data.dungeons,
+        }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setSaveMsg(err.error ?? 'Save failed.');
+        return;
+      }
+      const json = (await res.json()) as {
+        world?: { id: string; name: string | null };
+      };
+      setSaveMsg(
+        `Saved "${json.world?.name ?? 'Untitled'}" (${data.dungeons.length} dungeon${data.dungeons.length === 1 ? '' : 's'}).`,
+      );
+      setWorldName('');
+      await fetchWorlds();
+      if (json.world?.id) setSelectedId(json.world.id);
+    } catch {
+      setSaveMsg('Save failed.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLoad = async () => {
+    if (!selectedId) {
+      setSaveMsg('Pick a saved world first.');
+      return;
+    }
+    setSaveMsg(null);
+    try {
+      const res = await fetch(`/api/worlds/${selectedId}`);
+      if (!res.ok) {
+        setSaveMsg('Load failed.');
+        return;
+      }
+      const json = (await res.json()) as {
+        world?: { config: GameConfig; dungeons: WorldData['dungeons'] };
+      };
+      if (!json.world) {
+        setSaveMsg('Load failed.');
+        return;
+      }
+      onLoadWorld({ config: json.world.config, dungeons: json.world.dungeons });
+      setSaveMsg('World loaded.');
+    } catch {
+      setSaveMsg('Load failed.');
+    }
+  };
+
+  const handleDeleteSaved = async () => {
+    if (!selectedId) {
+      setSaveMsg('Pick a saved world first.');
+      return;
+    }
+    setSaveMsg(null);
+    try {
+      const res = await fetch(`/api/worlds/${selectedId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        setSaveMsg('Delete failed.');
+        return;
+      }
+      setSaveMsg('Saved world deleted.');
+      await fetchWorlds();
+    } catch {
+      setSaveMsg('Delete failed.');
+    }
   };
 
   const commitDraft = (key: NumericFieldKey) => {
@@ -137,7 +308,7 @@ export function ConfigPanel({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Panel */}
@@ -146,7 +317,7 @@ export function ConfigPanel({
         <div className="flex items-center justify-between p-4 border-b border-amber-900/30 bg-gray-800/50">
           <h2 className="text-xl font-bold text-amber-100">Configuration</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-400 hover:text-amber-100 transition-colors"
           >
             <svg
@@ -207,7 +378,10 @@ export function ConfigPanel({
                 </label>
               </div>
               {config.includeCity && (
-                <div>{renderNumberRow('citySize', 'City Size (tiles)')}</div>
+                <>
+                  {renderNumberRow('cityWidth', 'City Width (tiles)')}
+                  {renderNumberRow('cityHeight', 'City Height (tiles)')}
+                </>
               )}
             </div>
           </section>
@@ -216,11 +390,81 @@ export function ConfigPanel({
           <section>
             <h3 className="text-lg font-semibold text-amber-200 mb-3">Dungeon Settings</h3>
             <div className="space-y-3">
-              {renderNumberRow('dungeonCount', 'Number of Dungeons')}
               {renderNumberRow('roomsPerDungeon', 'Rooms per Dungeon')}
               {renderNumberRow('minRoomSize', 'Min Room Size (tiles)')}
               {renderNumberRow('maxRoomSize', 'Max Room Size (tiles)')}
               {renderNumberRow('corridorWidth', 'Corridor Width (tiles)')}
+              <p className="text-sm text-gray-400">
+                Dungeons on map:{' '}
+                <span className="text-amber-100 font-semibold">{dungeonCount}</span>
+              </p>
+              {dungeonMsg && (
+                <p className="text-sm text-red-300">{dungeonMsg}</p>
+              )}
+            </div>
+          </section>
+
+          {/* Save / Load */}
+          <section>
+            <h3 className="text-lg font-semibold text-amber-200 mb-3">Save / Load</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="worldName" className="text-sm text-gray-300">
+                  World Name
+                </label>
+                <input
+                  id="worldName"
+                  type="text"
+                  value={worldName}
+                  onChange={(e) => setWorldName(e.target.value)}
+                  placeholder="Untitled"
+                  className="bg-gray-900 border border-gray-600 text-amber-100 rounded w-40 px-2 py-1"
+                />
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full px-4 py-2 bg-sky-900/60 hover:bg-sky-800/60 disabled:opacity-50 text-sky-100 rounded border border-sky-700/50 transition-colors"
+              >
+                {saving ? 'Saving…' : 'Save World to Neon'}
+              </button>
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="savedWorlds" className="text-sm text-gray-300">
+                  Saved Worlds
+                </label>
+                <select
+                  id="savedWorlds"
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  className="bg-gray-900 border border-gray-600 text-amber-100 rounded w-40 px-2 py-1"
+                >
+                  {savedWorlds.length === 0 && (
+                    <option value="">No saved worlds</option>
+                  )}
+                  {savedWorlds.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name ?? 'Untitled'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleLoad}
+                  className="flex-1 px-4 py-2 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-100 rounded border border-indigo-700/50 transition-colors"
+                >
+                  Load
+                </button>
+                <button
+                  onClick={handleDeleteSaved}
+                  className="flex-1 px-4 py-2 bg-red-900/60 hover:bg-red-800/60 text-red-100 rounded border border-red-700/50 transition-colors"
+                >
+                  Delete Saved
+                </button>
+              </div>
+              {saveMsg && (
+                <p className="text-sm text-gray-300">{saveMsg}</p>
+              )}
             </div>
           </section>
 
@@ -262,24 +506,32 @@ export function ConfigPanel({
 
         {/* Footer */}
         <div className="p-4 border-t border-amber-900/30 flex flex-col gap-2 bg-gray-800/50">
-          <button
-            onClick={onGenerate}
-            className="w-full px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors flex items-center justify-center gap-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+          <div className="flex gap-2">
+            <button
+              onClick={handleGenerateDungeon}
+              className="flex-1 px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors flex items-center justify-center gap-2"
             >
-              <path
-                fillRule="evenodd"
-                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Generate New Map
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Generate Dungeon
+            </button>
+            <button
+              onClick={handleDeleteDungeon}
+              className="flex-1 px-4 py-2 bg-orange-900/60 hover:bg-orange-800/60 text-orange-100 rounded border border-orange-700/50 transition-colors"
+            >
+              Delete Dungeon
+            </button>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={handleReset}
@@ -288,7 +540,7 @@ export function ConfigPanel({
               Reset to Default
             </button>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 px-4 py-2 bg-amber-900/50 hover:bg-amber-800/50 text-amber-100 rounded transition-colors border border-amber-700/50"
             >
               Apply & Close

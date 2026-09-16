@@ -11,7 +11,7 @@ import {
 // ---------------------------------------------------------------------------
 // Seeded random number generator for reproducibility
 // ---------------------------------------------------------------------------
-class SeededRandom {
+export class SeededRandom {
   private seed: number;
 
   constructor(seed: number = Date.now()) {
@@ -31,6 +31,11 @@ class SeededRandom {
   pick<T>(arr: T[]): T {
     return arr[this.nextInt(0, arr.length - 1)];
   }
+}
+
+/** Factory for a persistent RNG instance (engine holds one across dungeons). */
+export function createRng(seed: number = Date.now()): SeededRandom {
+  return new SeededRandom(seed);
 }
 
 // ---------------------------------------------------------------------------
@@ -65,9 +70,37 @@ function rectCenter(rect: Rect): Point {
   };
 }
 
+/**
+ * Centered city rect (`cityWidth x cityHeight`), or null when the city is
+ * disabled. Returns the rect even if it slightly exceeds tiny maps; callers
+ * clip when rendering.
+ */
+export function getCityRect(config: GameConfig): Rect | null {
+  if (!config.includeCity) return null;
+  return {
+    x: Math.floor((config.mapWidth - config.cityWidth) / 2),
+    y: Math.floor((config.mapHeight - config.cityHeight) / 2),
+    width: config.cityWidth,
+    height: config.cityHeight,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Room placement with directional flow
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Tunnel-carve + Room Stamping (digger agent) — tuning knobs
+// ---------------------------------------------------------------------------
+
+/** Digger walk steps per requested room (total steps = roomsPerDungeon * this). */
+export const DIGGER_STEPS_PER_ROOM = 14;
+/** Chance the digger keeps walking the same direction each step (momentum). */
+export const DIGGER_MOMENTUM = 0.65;
+/** Path steps between room stamp attempts. */
+export const STAMP_INTERVAL = 10;
+/** Extra forward points to try when a stamp anchor overlaps (lookahead). */
+export const STAMP_LOOKAHEAD = 5;
 
 /**
  * Cardinal directions as vectors.  Index matters for the momentum logic:
@@ -81,90 +114,121 @@ const DIRECTIONS: { dx: number; dy: number }[] = [
 ];
 
 /**
- * Try to place a single room inside `bounds`, avoiding `existingRooms` and the
- * `localRooms` already placed in the current dungeon.  Returns the Room if
- * placed, otherwise null.
+ * Digger agent: random-walk inside `bounds` (inset 2 tiles) for up to
+ * `maxSteps` steps, with momentum (65% continue straight). Returns the
+ * recorded path points, starting from a random point inset 3 tiles.
  */
-function tryPlaceRoom(
+function carveDiggerPath(
   rng: SeededRandom,
+  bounds: Rect,
+  maxSteps: number,
+): Point[] {
+  const minX = bounds.x + 2;
+  const maxX = bounds.x + bounds.width - 1 - 2;
+  const minY = bounds.y + 2;
+  const maxY = bounds.y + bounds.height - 1 - 2;
+
+  // Degenerate bounds: return just the center point.
+  if (minX > maxX || minY > maxY) {
+    return [
+      {
+        x: bounds.x + Math.floor(bounds.width / 2),
+        y: bounds.y + Math.floor(bounds.height / 2),
+      },
+    ];
+  }
+
+  // Start inset 3 tiles, clamped into the walk area (midpoint fallback for
+  // tiny bounds where the inset range is inverted).
+  const clamp = (v: number, lo: number, hi: number) =>
+    Math.max(lo, Math.min(hi, v));
+  const sxMin = bounds.x + 3;
+  const sxMax = bounds.x + bounds.width - 1 - 3;
+  const syMin = bounds.y + 3;
+  const syMax = bounds.y + bounds.height - 1 - 3;
+  let x =
+    sxMin <= sxMax
+      ? rng.nextInt(sxMin, sxMax)
+      : bounds.x + Math.floor(bounds.width / 2);
+  let y =
+    syMin <= syMax
+      ? rng.nextInt(syMin, syMax)
+      : bounds.y + Math.floor(bounds.height / 2);
+  x = clamp(x, minX, maxX);
+  y = clamp(y, minY, maxY);
+
+  const path: Point[] = [{ x, y }];
+  let dir = rng.pick(DIRECTIONS);
+
+  for (let step = 0; step < maxSteps; step++) {
+    if (rng.next() >= DIGGER_MOMENTUM) {
+      dir = rng.pick(DIRECTIONS);
+    }
+    let nx = x + dir.dx;
+    let ny = y + dir.dy;
+    if (nx < minX || nx > maxX || ny < minY || ny > maxY) {
+      // Turn when hitting the inset wall; skip the step if still outside.
+      dir = rng.pick(DIRECTIONS);
+      nx = x + dir.dx;
+      ny = y + dir.dy;
+      if (nx < minX || nx > maxX || ny < minY || ny > maxY) continue;
+    }
+    x = nx;
+    y = ny;
+    path.push({ x, y });
+  }
+
+  return path;
+}
+
+/**
+ * Try to stamp one room centered on `center`: random size from
+ * config.minRoomSize/maxRoomSize, shrunk + clamped to stay inside `bounds`.
+ * Returns the Room when it fits in bounds and avoids overlaps, else null.
+ */
+function tryStampRoom(
+  rng: SeededRandom,
+  center: Point,
   bounds: Rect,
   config: GameConfig,
   existingRooms: Room[],
   localRooms: Room[],
-  isStart: boolean,
-  isBoss: boolean,
-  /** Preferred direction vector (null = no preference). */
-  preferredDir: { dx: number; dy: number } | null,
-  /** Center of the previous room to flow from (null for the first room). */
-  anchorCenter: Point | null,
+  id: number,
 ): Room | null {
-  const attempts = 200;
-  const gapMin = 4;
-  const gapMax = 8;
+  let width = rng.nextInt(config.minRoomSize, config.maxRoomSize);
+  let height = rng.nextInt(config.minRoomSize, config.maxRoomSize);
 
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    const width = rng.nextInt(config.minRoomSize, config.maxRoomSize);
-    const height = rng.nextInt(config.minRoomSize, config.maxRoomSize);
+  // Shrink (rather than fail) so the rect can stay inside small bounds.
+  width = Math.max(1, Math.min(width, bounds.width));
+  height = Math.max(1, Math.min(height, bounds.height));
 
-    let x: number;
-    let y: number;
+  const x = Math.max(
+    bounds.x,
+    Math.min(center.x - Math.floor(width / 2), bounds.x + bounds.width - width),
+  );
+  const y = Math.max(
+    bounds.y,
+    Math.min(
+      center.y - Math.floor(height / 2),
+      bounds.y + bounds.height - height,
+    ),
+  );
 
-    if (anchorCenter && preferredDir) {
-      // Directional placement: place the room in the preferred direction from
-      // the previous room center, with some jitter on the perpendicular axis.
-      const gap = rng.nextInt(gapMin, gapMax);
+  const candidate: Rect = { x, y, width, height };
 
-      if (preferredDir.dx !== 0) {
-        // Horizontal movement
-        x =
-          anchorCenter.x +
-          preferredDir.dx * (gap + Math.floor(rng.next() * 4));
-        y =
-          anchorCenter.y +
-          rng.nextInt(-3, 3) -
-          Math.floor(height / 2);
-      } else {
-        // Vertical movement
-        y =
-          anchorCenter.y +
-          preferredDir.dy * (gap + Math.floor(rng.next() * 4));
-        x =
-          anchorCenter.x +
-          rng.nextInt(-3, 3) -
-          Math.floor(width / 2);
-      }
-    } else {
-      // Random placement (first room or fallback)
-      x = rng.nextInt(bounds.x + 2, bounds.x + bounds.width - width - 2);
-      y = rng.nextInt(bounds.y + 2, bounds.y + bounds.height - height - 2);
-    }
-
-    const candidate: Rect = { x, y, width, height };
-
-    // Must be fully inside dungeon bounds
-    if (!isWithinBounds(candidate, bounds)) continue;
-
-    // Must not overlap any existing room (from any dungeon) or local rooms
-    const overlaps =
-      existingRooms.some((r) => rectsOverlap(candidate, r.rect, 3)) ||
-      localRooms.some((r) => rectsOverlap(candidate, r.rect, 3));
-
-    if (overlaps) continue;
-
-    return {
-      id: localRooms.length,
-      rect: candidate,
-      connected: [],
-      isStart,
-      isBoss,
-    };
+  if (!isWithinBounds(candidate, bounds)) return null;
+  if (existingRooms.some((r) => rectsOverlap(candidate, r.rect, 2))) {
+    return null;
+  }
+  if (localRooms.some((r) => rectsOverlap(candidate, r.rect, 1))) {
+    return null;
   }
 
-  return null;
+  return { id, rect: candidate, connected: [], isStart: false, isBoss: false };
 }
 
 // ---------------------------------------------------------------------------
-// generateDungeon – sequential rooms with directional momentum
+// generateDungeon – digger tunnel-carve + room stamping
 // ---------------------------------------------------------------------------
 
 function generateDungeon(
@@ -174,71 +238,139 @@ function generateDungeon(
   rng: SeededRandom,
   existingRooms: Room[],
 ): Dungeon {
+  const empty: Dungeon = { id, rooms: [], bossRoomId: 0, startRoomId: 0 };
+
+  // --- DIG: random-walk tunnel ---------------------------------------------
+  const maxSteps = Math.max(1, config.roomsPerDungeon * DIGGER_STEPS_PER_ROOM);
+  const path = carveDiggerPath(rng, bounds, maxSteps);
+  if (path.length === 0) return empty;
+
+  // --- STAMP: start room, shifting forward until one fits -------------------
   const rooms: Room[] = [];
-
-  // --- Place the first (start) room randomly --------------------------------
-  const firstRoom = tryPlaceRoom(
-    rng,
-    bounds,
-    config,
-    existingRooms,
-    rooms,
-    /* isStart */ true,
-    /* isBoss */ false,
-    /* preferredDir */ null,
-    /* anchorCenter */ null,
-  );
-
-  if (!firstRoom) {
-    return { id, rooms: [], bossRoomId: 0, startRoomId: 0 };
-  }
-  rooms.push(firstRoom);
-
-  // --- Place remaining rooms sequentially with momentum ---------------------
-  let flowDir: { dx: number; dy: number } = rng.pick(DIRECTIONS);
-
-  for (let i = 1; i < config.roomsPerDungeon; i++) {
-    const isBossRoom = i === config.roomsPerDungeon - 1;
-    const anchor = rectCenter(rooms[rooms.length - 1].rect);
-
-    // Decide whether to keep the flow direction or pick a new one
-    const keepMomentum = rng.next() < 0.6;
-    const dir = keepMomentum ? flowDir : rng.pick(DIRECTIONS);
-
-    const room = tryPlaceRoom(
+  let lastStamp = -1;
+  for (let i = 0; i < path.length; i++) {
+    const room = tryStampRoom(
       rng,
+      path[i],
       bounds,
       config,
       existingRooms,
       rooms,
-      /* isStart */ false,
-      isBossRoom,
-      dir,
-      anchor,
+      rooms.length,
     );
-
     if (room) {
-      // Connect the new room to the previous one (sequential chain)
-      room.connected.push(rooms[rooms.length - 1].id);
-      rooms[rooms.length - 1].connected.push(room.id);
-
+      room.isStart = true;
       rooms.push(room);
-      flowDir = dir; // Update flow direction
+      lastStamp = i;
+      break;
     }
-    // If placement failed we simply skip this room (keeps the dungeon smaller
-    // rather than looping forever).
+  }
+  if (lastStamp < 0) return empty;
+
+  // --- STAMP: remaining rooms ~STAMP_INTERVAL path steps after the last -----
+  // --- stamped room (cursor-based so rooms spread along the tunnel) --------
+  for (let n = 1; n < config.roomsPerDungeon; n++) {
+    const base = lastStamp + STAMP_INTERVAL;
+    if (base >= path.length) break; // path exhausted
+    const end = Math.min(base + STAMP_LOOKAHEAD, path.length - 1);
+    let stamped = false;
+    for (let i = base; i <= end; i++) {
+      const room = tryStampRoom(
+        rng,
+        path[i],
+        bounds,
+        config,
+        existingRooms,
+        rooms,
+        rooms.length,
+      );
+      if (room) {
+        rooms.push(room);
+        lastStamp = i;
+        stamped = true;
+        break;
+      }
+    }
+    // On failure we give up on that room slot and continue from the end of
+    // its window (keeps the dungeon smaller rather than looping forever).
+    if (!stamped) lastStamp = end;
   }
 
-  // Ensure start and boss IDs are correct
-  const startRoom = rooms.find((r) => r.isStart);
-  const bossRoom = rooms.find((r) => r.isBoss);
+  // Engine reports "No space" unless at least 2 rooms were stamped.
+  if (rooms.length < 2) return empty;
+
+  // Mark exactly one start (first) and one boss (last), wire the chain.
+  for (let i = 0; i < rooms.length; i++) {
+    rooms[i].isStart = i === 0;
+    rooms[i].isBoss = i === rooms.length - 1;
+    rooms[i].connected = [];
+  }
+  for (let i = 1; i < rooms.length; i++) {
+    rooms[i].connected.push(rooms[i - 1].id);
+    rooms[i - 1].connected.push(rooms[i].id);
+  }
 
   return {
     id,
     rooms,
-    bossRoomId: bossRoom?.id ?? rooms.length - 1,
-    startRoomId: startRoom?.id ?? 0,
+    bossRoomId: rooms[rooms.length - 1].id,
+    startRoomId: rooms[0].id,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Single-dungeon placement on a golden-angle circle
+// ---------------------------------------------------------------------------
+
+/** Golden angle in radians (~137.5°) for even angular distribution. */
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+/** Compute the dungeon bounds rect for a given angle around the map center. */
+function boundsForAngle(config: GameConfig, angle: number): Rect {
+  const gridWidth = config.mapWidth;
+  const gridHeight = config.mapHeight;
+  const minDim = Math.min(gridWidth, gridHeight);
+  const dungeonAreaSize = Math.floor(minDim * 0.35);
+  const circleRadius = Math.floor(minDim * 0.4);
+
+  const centerX = Math.floor(gridWidth / 2 + Math.cos(angle) * circleRadius);
+  const centerY = Math.floor(gridHeight / 2 + Math.sin(angle) * circleRadius);
+
+  return {
+    x: Math.max(2, centerX - Math.floor(dungeonAreaSize / 2)),
+    y: Math.max(2, centerY - Math.floor(dungeonAreaSize / 2)),
+    width: Math.min(dungeonAreaSize, gridWidth - 4),
+    height: Math.min(dungeonAreaSize, gridHeight - 4),
+  };
+}
+
+/**
+ * Place a single dungeon on a circle around the map center. The base angle
+ * derives from the golden angle times the dungeon index, plus jitter; up to
+ * ~8 angle/bounds attempts are tried. Returns null when fewer than 2 rooms
+ * could be stamped (map full). `existingRooms` must include the city pseudo-room plus
+ * all previous dungeons' rooms so the new dungeon never overlaps them.
+ */
+export function generateSingleDungeon(
+  config: GameConfig,
+  existingRooms: Room[],
+  index: number,
+  rng: SeededRandom,
+): Dungeon | null {
+  const baseAngle = index * GOLDEN_ANGLE;
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    // Spread retries around the circle with a bit of random jitter.
+    const angle =
+      baseAngle + attempt * (Math.PI / 4) + rng.next() * 0.5;
+    const bounds = boundsForAngle(config, angle);
+    const dungeon = generateDungeon(index, bounds, config, rng, existingRooms);
+    if (dungeon.rooms.length >= 2) {
+      return dungeon;
+    }
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -361,13 +493,20 @@ function addWalls(tileMap: TileMap): void {
 }
 
 // ---------------------------------------------------------------------------
-// Main entry point
+// Render an explicit world (city + given dungeons) to a tile map
 // ---------------------------------------------------------------------------
 
-export function generateTileMap(config: GameConfig): {
-  tileMap: TileMap;
-  dungeons: Dungeon[];
-} {
+/**
+ * Build a tile map from an explicit dungeon list. Draws the centered
+ * `cityWidth x cityHeight` city (when enabled), then every non-empty
+ * dungeon's rooms (START/BOSS/FLOOR), room walls, L-corridors between
+ * connected rooms, and walls around corridors. Rooms outside the map bounds
+ * are clipped by the existing render guards.
+ */
+export function renderWorld(
+  config: GameConfig,
+  dungeons: Dungeon[],
+): TileMap {
   const rng = new SeededRandom(config.seed ?? Date.now());
 
   const gridWidth = config.mapWidth;
@@ -382,19 +521,16 @@ export function generateTileMap(config: GameConfig): {
       .map(() => Array(gridWidth).fill(TileType.EMPTY)),
   };
 
-  const dungeons: Dungeon[] = [];
-  const allRooms: Room[] = []; // used for cross-dungeon collision checks
-
   // ------------------------------------------------------------------
-  // City (optional, placed in the centre)
+  // City (optional, centered cityWidth x cityHeight)
   // ------------------------------------------------------------------
-  if (config.includeCity) {
-    const cityX = Math.floor((gridWidth - config.citySize) / 2);
-    const cityY = Math.floor((gridHeight - config.citySize) / 2);
+  const cityRect = getCityRect(config);
+  if (cityRect) {
+    const { x: cityX, y: cityY, width: cityW, height: cityH } = cityRect;
 
     // Fill city floor
-    for (let y = cityY; y < cityY + config.citySize; y++) {
-      for (let x = cityX; x < cityX + config.citySize; x++) {
+    for (let y = cityY; y < cityY + cityH; y++) {
+      for (let x = cityX; x < cityX + cityW; x++) {
         if (y >= 0 && y < gridHeight && x >= 0 && x < gridWidth) {
           tileMap.tiles[y][x] = TileType.CITY_FLOOR;
         }
@@ -402,14 +538,14 @@ export function generateTileMap(config: GameConfig): {
     }
 
     // Walls around the city perimeter
-    for (let y = cityY - 1; y <= cityY + config.citySize; y++) {
-      for (let x = cityX - 1; x <= cityX + config.citySize; x++) {
+    for (let y = cityY - 1; y <= cityY + cityH; y++) {
+      for (let x = cityX - 1; x <= cityX + cityW; x++) {
         if (y < 0 || y >= gridHeight || x < 0 || x >= gridWidth) continue;
         if (
           y === cityY - 1 ||
-          y === cityY + config.citySize ||
+          y === cityY + cityH ||
           x === cityX - 1 ||
-          x === cityX + config.citySize
+          x === cityX + cityW
         ) {
           if (tileMap.tiles[y][x] === TileType.EMPTY) {
             tileMap.tiles[y][x] = TileType.CITY_WALL;
@@ -417,51 +553,6 @@ export function generateTileMap(config: GameConfig): {
         }
       }
     }
-
-    // Treat the city as a single "room" so dungeons avoid overlapping it
-    allRooms.push({
-      id: 0,
-      rect: {
-        x: cityX,
-        y: cityY,
-        width: config.citySize,
-        height: config.citySize,
-      },
-      connected: [],
-      isStart: false,
-      isBoss: false,
-    });
-  }
-
-  // ------------------------------------------------------------------
-  // Dungeons arranged in a circle around the city
-  // ------------------------------------------------------------------
-  const minDim = Math.min(gridWidth, gridHeight);
-  const dungeonAreaSize = Math.floor(minDim * 0.35);
-  const circleRadius = Math.floor(minDim * 0.4);
-
-  const cityCenterX = Math.floor(gridWidth / 2);
-  const cityCenterY = Math.floor(gridHeight / 2);
-
-  for (let i = 0; i < config.dungeonCount; i++) {
-    const angle = (i / config.dungeonCount) * Math.PI * 2;
-
-    const centerX = Math.floor(cityCenterX + Math.cos(angle) * circleRadius);
-    const centerY = Math.floor(cityCenterY + Math.sin(angle) * circleRadius);
-
-    // Dungeon bounds centred on the computed position
-    const dungeonBounds: Rect = {
-      x: Math.max(2, centerX - Math.floor(dungeonAreaSize / 2)),
-      y: Math.max(2, centerY - Math.floor(dungeonAreaSize / 2)),
-      width: Math.min(dungeonAreaSize, gridWidth - 4),
-      height: Math.min(dungeonAreaSize, gridHeight - 4),
-    };
-
-    const dungeon = generateDungeon(i, dungeonBounds, config, rng, allRooms);
-    dungeons.push(dungeon);
-
-    // Register rooms so subsequent dungeons avoid them
-    allRooms.push(...dungeon.rooms);
   }
 
   // ------------------------------------------------------------------
@@ -526,5 +617,5 @@ export function generateTileMap(config: GameConfig): {
     addWalls(tileMap);
   }
 
-  return { tileMap, dungeons };
+  return tileMap;
 }

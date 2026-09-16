@@ -14,10 +14,10 @@ export interface GameConfig {
   
   // City settings
   includeCity: boolean;
-  citySize: number; // in tiles
-  
+  cityWidth: number; // in tiles
+  cityHeight: number; // in tiles
+
   // Dungeon settings
-  dungeonCount: number;
   roomsPerDungeon: number;
   minRoomSize: number; // in tiles
   maxRoomSize: number; // in tiles
@@ -51,6 +51,11 @@ export interface Dungeon {
   startRoomId: number;
 }
 
+export interface WorldData {
+  config: GameConfig;
+  dungeons: Dungeon[];
+}
+
 export interface City {
   rect: Rect;
   buildings: Rect[];
@@ -80,8 +85,8 @@ export const DEFAULT_CONFIG: GameConfig = {
   mapHeight: 80,
   tilePixelSize: 16,
   includeCity: true,
-  citySize: 20,
-  dungeonCount: 3,
+  cityWidth: 20,
+  cityHeight: 20,
   roomsPerDungeon: 5,
   minRoomSize: 5,
   maxRoomSize: 10,
