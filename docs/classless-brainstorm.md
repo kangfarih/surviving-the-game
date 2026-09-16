@@ -418,3 +418,252 @@ We never author 2,400 rows — we author 80 + 30 Leg + 60 Epic + 100 Rare (= 190
 6. Eat/drink to full in ~30s: too WoW (nostalgic) or too slow (mobile-session killer)? Is `campRegenMult = 2` enough?
 7. Threat with no taunt in M1 Free Pick: does any 1v2 just collapse onto the healer? Ship a dummy taunt or accept it?
 
+---
+
+## 14. Secondary Stats — Real Math (M1-ready, tunables JSON shape)
+
+> Status: **draft / tunable — all numbers below are placeholders for playtest.**
+> Extends §2 (stats/curves), §10 (factor budget), and §13 (combat math) — does not contradict them.
+> M1 ships the §13 linear curves as normative code; the rating→% curves in §14.2–14.3 are the
+> M2 diminishing-returns (DR) extension with constants tuned to reproduce §13 at L5 and stay within
+> ±1.5% absolute at L20/L50 given stated stat + gear budgets — except block at L50, which carries an
+> intentional DR gap (tolerance ±5% absolute, block only: endgame tanks gain block value, not chance).
+> One JSON object owns every knob (§14.8).
+
+### 14.1 Design goals (draft / tunable)
+
+- **One curve shape everywhere.** Every secondary converts `rating → %` with DR + cap + level delta
+>   (attacker-level scaling + `perLevel * levelDiff` shift), so tooltips, sim, and telemetry share one helper
+>   (full form, same as §14.2; fractions in code, % in tables):
+>   `bonus = bonusCap * rating / (rating + K * atkLevel)`,
+>   `pct = clamp(base + bonus + perLevel * levelDiff, 0, cap)`.
+>   Level-diff convention (once): `levelDiff` ≡ `ldDA` = `defLevel − atkLevel` (positive = defender higher);
+>   attacker-view delta `ldAD` = `−levelDiff`. Miss is subtractive (accuracy bonus reduces it);
+>   dodge/parry/block are additive. `K` sets how fast a level erodes last tier's gear;
+>   `bonusCap = cap − base` keeps rating from ever breaking the cap.
+- **Caps before stacking.** Avoidance caps bind first, then level delta, then rating — no build exceeds its
+>   table cap even with buffs (§14.2). Target: fully-buffed tank vs at-level elite keeps total avoidance
+>   **< 60%** on the one-roll table (see Ex1, §14.7), so TTK stays in the §13 normative band (12–18s trash
+>   1v1, 30–60s elite, 90–150s boss) and §10 factor budgets do not need re-authoring.
+- **One-roll order kept from §13.** Single `d100` per swing, first match wins (draft / tunable):
+>   `miss > dodge > parry > glance > block > crit > crush > hit`. Front-only entries (`parry`, `block`)
+>   are skipped when the attacker is behind the defender's 180° front arc; melee-only entries (`parry`,
+>   `glance` on white swings) are skipped for spells. Remainder = clean `hit` at 100% factor.
+- **Separate melee vs spell tables (draft).** White swings + melee specials use the full table above.
+>   Spells / dots / traps skip `parry`, `glance`, `block`, and `crush` entirely and roll on the short table
+>   `resist-partial > miss(spell) > crit > hit` where `resist-partial` is the elemental multiplier (§14.3)
+>   applied as damage scaling, not a table slot that eats the roll. Ranged bows use the melee table for
+>   `miss/dodge` but skip `parry/block` unless the defender has a ranged-parry flag (default none in M1).
+- **Stat identity kept (§2a).** AGI = swings + dodge, DEX = casts + miss-suppression + crit, CON (trait) =
+>   block chance + block value (intentional tank extension from §13, not a contradiction), VIT = status
+>   resist + OOC regen (§14.3/14.6), STR/POW = damage, INT/WIS = mana pool/regen, LUK/CRT = crit spice.
+- **Tunables JSON shape.** Every constant below appears once in §14.8 with `name | default | unit/range |
+>   meaning` and ships as `combatTunables.json` consumed by `formulas.ts` (see §2c). No hardcoded numbers
+>   in sim code — only lookups.
+
+### 14.2 Physical avoidance — rating formalization (draft / tunable)
+
+- **Unified template (all four entries).** With `levelDiff` ≡ `ldDA` (positive = defender higher, §14.1):
+>   `bonus = bonusCap * rating / (rating + K * atkLevel)`, `pct = clamp(base + bonus + perLevel * levelDiff, 0, cap)`.
+>   Miss wraps the same helper subtractively: `miss% = clamp(base + perLevel * levelDiff − bonus_acc, 0, cap)`.
+>   `rating = stat * ratingPerPoint + gearRating` — gear carries the late-game budget so per-point stat values
+>   never need re-tuning when new tiers ship (same slot-economy logic as §6/§10).
+- **Defaults table (tuned to reproduce §13 linear at L5, track within ±1.5% at L20/L50 with gear; block L50 excepted at ±5%).**
+
+| entry | base | cap (`bonusCap`) | rating source (`ratingPerPoint`) | `K` | `perLevel` | front/shield/melee gate |
+|---|---|---|---|---|---|---|
+| miss (accuracy) | `5` (%) | `20` (`15`) | attacker DEX `×2.0` + `hitGear` | `120` | `+2.0` (%/lvl) | none — works vs all |
+| dodge | `5` (%) | `25` (`20`) | defender AGI `×3.0` + `dodgeGear` | `100` | `+0.5` (%/lvl) | none — 360° |
+| parry | `5` (%) | `15` (`10`) | defender STR `×1.0` + `parryGear` | `80` | `+0.25` (%/lvl) | front 180° + melee only |
+| block | `5` (%) | `25` (`20`) | defender CON `×5.0` + `blockGear` | `120` | `0` | front 180° + shield equipped |
+
+- **Calibration check — even level (`levelDiff = 0`), reproduces §13 (draft budgets).**
+>   L5: DEX 10 → rating 20 → acc-bonus `15×20/(20+600) = 0.48` → miss `4.52%` (§13: `4.5%` ✓).
+>   AGI 12 → rating 36 → dodge-bonus `20×36/(36+500) = 1.34` → dodge `6.34%` (§13: `6.2%` ✓ +0.14).
+>   STR 18 → rating 18 → parry-bonus `10×18/(18+400) = 0.43` → parry `5.43%` (§13: `5` ✓ +0.43).
+>   CON 20 → rating 100 → block-bonus `20×100/(100+600) = 2.86` → block `7.86%` (§13: `8.0%` ✓ −0.14).
+- **L20 / L50 tracking with gear budgets (draft).** L20 assumes `hitGear 150 / dodgeGear 380 / blockGear 1000`
+>   (greens + shield rating); L50 assumes `hitGear 1500 / dodgeGear 3820 / blockGear 3000` (epic tiers).
+>   L20 DEX 30 → rating 210 → miss `5 − 15×210/(210+2400) = 3.79%` (§13 linear: `3.5%` ✓ +0.29).
+>   L20 AGI 40 → rating 500 → dodge `5 + 20×500/2500 = 9.0%` (§13: `9.0%` ✓ exact by construction).
+>   L20 CON 45 → rating 1225 → block `5 + 20×1225/(1225+2400) = 11.76%` (§13: `11.75%` ✓ exact).
+>   L50 DEX 60 → rating 1620 → miss `1.81%` (§13: `2.0%` ✓ −0.19). L50 AGI 90 → rating 4090 →
+>   dodge `14.0%` (§13: `14.0%` ✓ exact). L50 CON 80 → rating 3400 → block `12.23%` (§13: `17.0%`,
+>   intentional DR gap −4.8 within the block-only ±5% tolerance: at endgame tanks gain **block value**,
+>   not chance — see below).
+- **Front-only + shield rules (draft).** `parry` requires a melee weapon (or explicit parry flag from a
+>   stance/augment, §7) and attacker in front arc; else 0. `block` requires a shield equipped and attacker
+>   in front arc; else 0. Dual-wield gives `+2%` parry (`dwParryBonus`, tunable) but no block. Buckler
+>   (`shieldTier 1`) / kite (`2`) / tower (`3`) scale `blockValue`, not chance (see §13.3 kept below).
+>   Backstabs (attacker behind arc) skip both entries — the Rogue-tax that makes positioning matter.
+- **Diminishing notes.** Doubling rating never doubles bonus: at `rating = K × atkLevel` the bonus sits at
+>   half of `bonusCap`; every further equal-rating chunk buys less. Level-ups erode last tier's gear by
+>   construction (`K × atkLevel` grows), so a fresh level always wants fresh rating — the Classic treadmill
+>   without touching per-point stat text. Stat-only (no-gear) curves fall below §13 linear past L20; that gap
+>   is the gear budget, not a nerf. M1 code may ship pure §13 linear and add `gearRating` terms in M2 with
+>   zero interface change (same `formulas.ts` signature, new JSON keys).
+
+### 14.3 Armor + elemental resists (draft / tunable)
+
+- **Armor DR kept verbatim from §13.** `DR% = min(Armor / (Armor + armorK + armorPerLevel × atkLevel), drCap)`
+>   with `armorK = 400`, `armorPerLevel = 85`, `drCap = 0.75`. Reference: 100 armor vs L5 = `10.8%`;
+>   400 armor vs L5 = `32.7%`; 800 armor vs L20 = `27.6%`; 1500 vs L20 = `41.7%`; 2500 vs L50 = `35.0%`.
+>   Armor applies **only** to physical (white + melee/ranged specials + physical dots like bleed).
+- **Elemental resist curve (new, same shape).** Per element (fire/frost/shadow/nature/storm/holy/blood/arcane/poison;
+>   tags per §5): `resistMult_taken = 1 − min(Resist / (Resist + resistK + resistPerLevel × atkLevel), resistCap)`
+>   with `resistK = 300`, `resistPerLevel = 60`, `resistCap = 0.75` (draft). Check: 150 fire-resist vs L20 =
+>   `150/(150+300+1200) = 9.1%`; 300 → `16.7%`; 600 (aura + gear + buff) → `28.6%`. Zero resist = full damage.
+>   Resist is checked per spell hit and **per DoT tick** (each tick re-rolls partial using current resist).
+- **Armor vs magic / DoTs rule (draft).** Armor never reduces elemental/arcane direct damage or elemental DoT
+>   ticks; resists never reduce physical. Hybrid skills (e.g. "molten blade": fire + melee) split `factor`
+>   by `physShare`/`elemShare` (default `0.5/0.5`, per-SkillDef tunable) and each share runs its own mitigation.
+>   Bleed/poison-traps flagged `physical` use armor; flagged `elemental` use resists — the flag lives on the
+>   SkillDef, never inferred. Binary resists (full immune) do not exist in M1; cap + penetration cover it.
+- **Penetration (draft).** `effResist = max(0, Resist − penFlat) × (1 − penPct)`, then the curve above.
+>   Defaults `penFlat 0 / penPct 0`; boss auras grant up to `penPct 0.25`. Armor penetration mirrors it
+>   (`armorPenFlat/Pct`, default 0, elite mobs up to 15% in M2). Penetration applies before the cap.
+- **VIT status-resist quantified (new — §2a "status resist" was unquantified).**
+>   `durationMult = 1 / (1 + VIT × vitResistPerPoint)` with `vitResistPerPoint = 0.02` (draft), applied to
+>   stun/root/fear/silence/snare durations taken (not to damage). Check: VIT 10 → `0.833`; 20 → `0.714`
+>   (a 6s fear lands 4.3s); 40 → `0.556`; 60 → `0.455`. Same divisor gates `dotTakenMult = 1/(1+VIT×0.01)`
+>   (half the coefficient — VIT softens dots, does not immune them). No avoidance-roll interaction.
+
+### 14.4 Crit / crush / glance unified (draft / tunable — keeps §13)
+
+- **Crit chance kept (§2c + §13.2).** `crit% = min(5 + DEX×0.15 + CRT×0.4, 60)`, then level suppression
+>   `critEff = max(0, crit% − 1.0 × levelDiff)` (`critSuppressPerLevel = 1.0`). Vs +3: −3% crit. Spells, melee,
+>   and ranged share the chance roll; only the multiplier differs (next). CRT (trait, §2b) is the only source
+>   past the 60 cap math — DEX-heavy builds plateau, CRT builds spike. Cap `critCap = 60` pre-suppression.
+- **Crit damage kept (§13.3 unified).** Spells/dots `mult_spell = 1.5 + LUK×0.005`; melee white + melee specials
+>   `mult_melee = 2.0 + LUK×0.005`; shared `critDmgCap = 300%` (mult 3.0). At LUK 0 → 1.5×/2.0× so all §13 TTK
+>   examples and the §10 factor budget are unchanged. Ranged bows use `mult_melee`. DoT crits apply per tick
+>   at the same chance (no double-dip with haste — ticks scale rate, not crit).
+- **Crushing kept (mob-only).** `crushChance = 15`, `crushMult = 1.5`, only when mob views `levelDiff ≥ 3`
+>   (mob level − player level). Players never crush. Crush is checked **after** crit on the one-roll table so
+>   a crushing mob still shows its crit-suppression tax on the player side first. Crush ignores block value
+>   partially: blocked crushes still subtract `blockValue × crushBlockKept = 0.5` (draft) — shields help, not immune.
+- **Glance kept.** Attacker-lower-only: `glanceChance = clamp(10 + 10 × levelDiff, 0, 40)` (defender-minus-attacker
+>   view), damage `× U(0.65, 0.85)`. Even level: 0%. Vs +3: 40% — the "skull tax". Glance sits **above** block
+>   on the table so a glanced hit cannot also block (no double-tax display); spells never glance.
+- **DW vs 2H notes (draft).** Dual-wield: each hand rolls its own table at `dwHitPenalty = +3%` miss (off-hand
+>   only) and off-hand damage `× dwOffhandMult = 0.75`; main-hand keeps full factor. 2H: no penalty, swing timers
+>   per §13.4 (3.0–3.5s), `twoHandBonus = +10%` glance-ignored? No — 2H keeps glancing but gains `+5%` crit-damage
+>   (`twoHandCritBonus = 0.05`, additive to mult) to hold the §10 factor budget across styles. Sword-and-board:
+>   no penalty, gains block table entry. All three clear the same TTK band via `weaponDPS` normalization (§13.3).
+
+### 14.5 Haste / cast / CDR / DoT ticks (draft / tunable — keeps §13.4 split)
+
+- **AGI = swings, DEX = casts (kept).** `hasteSwing% = min(AGI × 0.003, 0.30)`; `castHaste% = min(DEX × 0.003, 0.30)`
+>   (shared `hasteCap = 0.30`). AGI never speeds casts; DEX never speeds swings. Rating extension (M2):
+>   `ratingHaste = hasteGear` adds flat (`hasteSwing% = min(AGI×0.003 + hasteGear×hasteRatingPerPoint, cap)` with
+>   `hasteRatingPerPoint = 0.0004` fraction per rating point, draft: 1000 gear ≈ +0.04 = 4%) — gear haste
+>   stacks with stat haste under the same cap.
+- **Effective-time formula.** `swingEff = swingBase / (1 + hasteSwing%)`; `castEff = castBase / (1 + castHaste%)`;
+>   `tickEff = tickBase / (1 + hasteRelevant%)` (melee dots use swing haste, spell dots use cast haste, draft).
+>   Check: 3.5s 2H at AGI 40 (12%) → `3.5/1.12 = 3.13s`. 2.0s Fireball at DEX 30 (9%) → `2.0/1.09 = 1.83s`.
+>   Haste never reduces below `minSwing = 0.8s` / `minCast = 0.5s` (clamp, anti-macro).
+- **DoT tick scaling (draft).** Total DoT factor is conserved across haste: `tickDmg = factorTotal × tickShare`
+>   where faster ticks deal proportionally smaller hits but more of them (`ticks = ceil(duration / tickEff)`).
+>   Partial final tick is prorated, never rounded up. Haste does not change `duration`; it changes tick count.
+>   Crit per tick (§14.4); resist per tick (§14.3); armor per tick for physical dots (post-glance? dots skip glance).
+- **Charges / CDR stacking rule (draft).** ToS-Overheat `charges` (canonical, §4) recharge in parallel at
+>   `rechargeEff = rechargeBase / (1 + cdr%)`; flat cooldowns scale identically. `cdr%` stacks multiplicatively:
+>   `cdr% = 1 − (1 − cdrGear%) × (1 − cdrBuff%) × (1 − cdrTrait%)`, cap `cdrCap = 0.40` (40%).
+>   Check: 15% gear × 20% buff × 10% trait → `1 − 0.85×0.80×0.90 = 38.8%` (under cap ✓). CDR never grants
+>   extra charges, only faster refill; charge count comes only from augments/gear (`+1 charge`, Epic, §6).
+>   Minimum cooldown `minCooldown = 0.5s` after CDR (no machine-gun Execute).
+
+### 14.6 Regen / lifesteal / survival (draft / tunable — keeps §13.5)
+
+- **Regen kept verbatim.** In-combat HP `0`; OOC after `oocDelay = 5s`: `maxHP×0.01 + VIT×0.2` per s
+>   (L5: ~4.8 HP/s at 179 HP/VIT 15 → ~37s walk-full; eating `+3%/s` → ~18s sit-full). Mana 5s-rule then
+>   `maxMana×0.02 + INT×0.3 + WIS×0.5` per s; food `3%` HP/s, water `5%` mana/s sitting; camp `×2.0`.
+- **Lifesteal (new, draft).** `heal = lifesteal% × postMitDamageDealt` (after armor/resist/block/crit — you
+>   leech what actually lands, overkill excluded), split per hit, no crit on the heal. Sources stack
+>   additively under a hard cap: `lifesteal% = min(sum, lifestealCap)` with `lifestealCap = 0.15` (15%,
+>   tunable 0.10–0.25). Check: 50 post-mit spell hit at 10% → 5.0 HP. Bleed/DoT ticks leech at
+>   `dotLifestealKept = 0.5` (half rate). Lifesteal never overheals into absorb; excess is lost (no rolling pool
+>   in M1). Mobs have zero base lifesteal; elite affix up to 5% in M2.
+- **Stamina drain hooks (draft, extends §13.5).** Max 100. Sprint `4/s`, dodge-step `15`, swim `6/s`;
+>   regen `8/s` idle / `4/s` walking, zero while sprinting. At 0: no sprint, swings `×0.8` (`exhaustedMult`).
+>   Melee specials cost `specialStamCost = 5` (whiffs refund half). Stamina is per-actor, ticks on the 10Hz clock.
+- **Hunger drain hooks (draft).** `hungerGraceMin = 10` min fed; unfed → `oocPctPerSec` halved + stamina regen
+>   halved; `hungerDeepMin = 25` min → also `−10%` damage dealt (`starveDmgMult = 0.9`). No starvation death in
+>   M1 (Classic courtesy). Eating resets both timers; camp meals grant `wellFedMin = 15` min of `+5%` damage
+>   (`wellFedMult = 1.05`) — the reason to cook before a boss, not a maintenance chore.
+
+### 14.7 Worked examples (draft numbers — verify in playtest)
+
+- **Ex1 — L20 sword-and-board tank vs L22 elite bruiser (avoidance sum < 60% ✓, block value math).**
+>   Tank: STR 30 / AGI 25 / VIT 30 / CON 45 / DEX 15, tower shield (`shieldTier 3`), armor 800, ~520 HP.
+>   Elite L22: raw swing 140 per 2.5s, attacker DEX 20, melee, frontal. `levelDiff (def − atk) = −2`.
+>   Table (M1 §13 linear, even-playtest code path): miss `5 + 2×(−2) − 20×0.05 = 0%` (clamped);
+>   dodge `5 + 25×0.10 + (−2)×0.5 = 6.5%`; parry `5%` (front + melee ✓); glance n/a (attacker higher);
+>   block `5 + 45×0.15 = 11.75%` (front + shield ✓). Avoidance sum `0 + 6.5 + 5 + 11.75 = 23.25%` —
+>   well under the 60% ceiling, so `≈77%` of swings reach armor. (M2 rating path: dodge-rating
+>   `25×3+150 = 225` → `5 + 20×225/(225+2200) − 1.0 ≈ 5.86%`; same story, DR −0.6.)
+>   Mitigation on a clean hit: armor DR `800/(800+400+85×22) = 800/3070 = 26.1%` → `140 × 0.739 = 103.5`;
+>   `blockValue = 8 + 45×1.5 + 3×6 = 93.5` → blocked hit `max(1, 103.5 − 93.5) = 10.0`; unblocked `103.5`.
+>   Expected taken per swing `= 0.1175×10 + (0.7675−0.1175)×103.5 ≈ 1.2 + 67.3 = 68.5` before dodge/parry/miss
+>   resolution — i.e. the shield turns one swing in eight into a scratch and the rest still hurt, so the
+>   elite's TTK-vs-tank lands ~30–45s (inside the §13 30–60s elite band) while two elites still kill.
+- **Ex2 — L20 mage resist vs L20 fire imp (resist % + TTK shift).**
+>   Mage: ~300 HP, INT 40, VIT 12, fire-resist 300 (gear 200 + aura 100); imp: firebolt raw 60 per 2.0s cast,
+>   900 HP; mage DPS 55 (Fireball factor build, §10 budget). No-resist baseline: imp deals 60/2s = 30 DPS →
+>   mage dies in `300/30 = 10.0s`; mage kills imp in `900/55 = 16.4s` → mage loses the trade (must kite/LOS).
+>   With 300 resist: `300/(300+300+60×20) = 300/1800 = 16.7%` → taken `60×0.833 = 50.0` → 25 DPS →
+>   mage survives `300/25 = 12.0s` (+20% survival) — still loses standing still, but one snare + one LOS break
+>   (3s drop, §13.6) stretches survival past 16.4s → wins with ~60 HP. Stacking to 600 (flask + buff):
+>   `600/2100 = 28.6%` → 42.9/hit → 21.4 DPS → 14.0s survival → wins clean. Resist buys exactly one extra
+>   cast per 150 rating — readable power, no immunity cliff, TTK shift stays inside §13 bands.
+
+### 14.8 Tunables registry delta (merge §13.8 + new keys; JSON shape for `formulas.ts`)
+
+> Unit convention: tables display caps/bases/bonusCaps/`perLevel` in `%` for readability; the JSON below
+> stores them as fractions 0–1 (`25%` → `0.25`, `2.0%/lvl` → `0.02`). Per-entry keys (`stat`,
+> `ratingPerPoint`, `K`, `base`, `cap`, `bonusCap`, `perLevel`, `gates`, `gearKey`) live inside each
+> `avoidance.<entry>` and mirror the §14.2 defaults table; all other keys are named exactly as in the
+> registry. `gates` values are string arrays over `front` / `melee` / `shield`.
+
+| name | default | unit / range | meaning (delta vs §13.8) |
+|---|---|---|---|
+| `dodgeRatingPerPoint` / `dodgeK` / `dodgePerLevel` | `3.0` / `100` / `0.5` | rating/pt, K, %/lvl | NEW — dodge rating curve (§14.2) |
+| `hitRatingPerPoint` / `hitK` / `missBonusCap` | `2.0` / `120` / `15` | rating/pt, K, % | NEW — accuracy bonus that subtracts from miss |
+| `parryRatingPerPoint` / `parryK` / `parryPerLevel` / `dwParryBonus` | `1.0` / `80` / `0.25` / `2` | rating/pt, K, %/lvl, % | NEW — parry rating; DW off-hand bonus |
+| `blockRatingPerPoint` / `blockK` / `blockGearBase` | `5.0` / `120` / `0` | rating/pt, K, rating | NEW — block rating; level shift stays 0 |
+| `resistK` / `resistPerLevel` / `resistCap` | `300` / `60` / `0.75` | K, K/lvl, fraction | NEW — elemental curve (§14.3) |
+| `armorPenFlat` / `armorPenPct` / `penFlat` / `penPct` | `0` / `0` / `0` / `0` | flat, fraction | NEW — armor + resist penetration (pre-cap) |
+| `vitResistPerPoint` / `vitDotKept` | `0.02` / `0.01` | 1/pt | NEW — VIT status duration divisor + dot divisor |
+| `critCap` / `critDmgCap` / `crushBlockKept` | `0.60 (60%)` / `3.0 (300%)` / `0.5` | fraction, mult, fraction | KEPT (§13) + NEW crush-vs-block kept fraction |
+| `dwHitPenalty` / `dwOffhandMult` / `twoHandCritBonus` | `0.03 (3%)` / `0.75` / `0.05` | fraction, mult, mult | NEW — DW penalty/off-hand share; 2H crit bonus |
+| `hasteRatingPerPoint` / `minSwing` / `minCast` | `0.0004` / `0.8s` / `0.5s` | fraction per rating pt, s | NEW — gear haste under shared `hasteCap` + floors |
+| `cdrCap` / `minCooldown` | `0.40` / `0.5s` | fraction, s | NEW — multiplicative CDR cap + floor |
+| `lifestealCap` / `dotLifestealKept` | `0.15` / `0.5` | fraction | NEW — post-mit leech cap + DoT kept fraction |
+| `specialStamCost` / `starveDmgMult` / `wellFedMult` | `5` / `0.9` / `1.05` | stam, mult | NEW — special stamina cost; starve/well-fed mults |
+
+```json
+{
+  "avoidance": {
+    "miss": { "stat": "DEX", "ratingPerPoint": 2.0, "K": 120, "base": 0.05, "cap": 0.20, "bonusCap": 0.15, "perLevel": 0.02, "mode": "subtract", "gearKey": "hitGear" },
+    "dodge": { "stat": "AGI", "ratingPerPoint": 3.0, "K": 100, "base": 0.05, "cap": 0.25, "bonusCap": 0.20, "perLevel": 0.005, "gearKey": "dodgeGear" },
+    "parry": { "stat": "STR", "ratingPerPoint": 1.0, "K": 80, "base": 0.05, "cap": 0.15, "bonusCap": 0.10, "perLevel": 0.0025, "gates": ["front", "melee"], "gearKey": "parryGear" },
+    "block": { "stat": "CON", "ratingPerPoint": 5.0, "K": 120, "base": 0.05, "cap": 0.25, "bonusCap": 0.20, "perLevel": 0, "gates": ["front", "shield"], "gearKey": "blockGear", "blockGearBase": 0 },
+    "dwParryBonus": 0.02
+  },
+  "resist": { "K": 300, "perLevel": 60, "cap": 0.75, "vitResistPerPoint": 0.02, "vitDotKept": 0.01, "armorPenFlat": 0, "armorPenPct": 0, "penFlat": 0, "penPct": 0 },
+  "crit": { "critCap": 0.60, "suppressPerLevel": 0.01, "meleeMult": 2.0, "spellMult": 1.5, "lukPerPoint": 0.005, "critDmgCap": 3.0, "crushBlockKept": 0.5 },
+  "haste": { "agiPerPoint": 0.003, "dexPerPoint": 0.003, "cap": 0.30, "hasteRatingPerPoint": 0.0004, "minSwing": 0.8, "minCast": 0.5, "cdrCap": 0.40, "minCooldown": 0.5 },
+  "lifesteal": { "lifestealCap": 0.15, "dotLifestealKept": 0.5 }
+}
+```
+
+### 14.9 Open questions
+
+1. Does the M2 rating layer earn its complexity, or should M1 §13 linear + caps carry through M3 (gear budgets aside)?
+2. Block value 93.5 vs 140-raw elite (Ex1): is "shield turns 1-in-8 into a scratch" the right fantasy, or should value scale slower (CON×1.0) with chance higher?
+3. Resist cap 75% vs penetration arms race: fixed cap, or attunement-style (Runemaster, §CoA) temporary overcap?
+4. VIT double-duty (regen + status + dot-soften): does every build dip VIT, recreating the dump-stat problem §2c tried to kill?
+5. Lifesteal cap 15%: with 2H high-post-mit hits, does Reaper-style HP-as-resource (CoA) break the zero-in-combat-regen pillar (§13.5)?
+6. CDR multiplicative + 40% cap: do charge-based (Overheat) specs feel the stat at all, or is CDR a caster-only tax?
+7. DW +3% miss on off-hand only: enough to hold 2H parity given `dpsFromAP` normalization, or need proc-rate normalization too?
+

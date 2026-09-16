@@ -1,6 +1,6 @@
 # Surviving the Game — Agent Survival Simulator
 
-> An agent gets teleported into a brutal barbarian survival-fantasy world and tries to survive.
+> An agent or bot pilots a drifter teleported into a brutal barbarian survival-fantasy world and tries to survive.
 
 Inspired by **_Surviving the Game as a Barbarian_**, this project is a simulator for watching autonomous agents spawn into a game world — with no cheats, no meta knowledge — and struggle to stay alive. Explore procedurally generated dungeons, stumble into the city, fight, loot, die, retry.
 
@@ -17,12 +17,15 @@ Playable world viewer (no combat yet):
 
 ## Vision
 
-1. **Teleport in.** An agent spawns in the start room with a random or drafted kit.
+1. **Teleport in.** A drifter spawns in the start room with a random or drafted kit.
 2. **Survive.** Same HP / stamina / hunger / combat rules as natives. No minimap hacks.
 3. **Observe.** Watch runs as a spectator: exploration paths, encounters, TTK, death causes.
 4. **Evolve.** Draft / Free Pick / Wildcard skill acquisition per run, telemetry-driven balance, thousands of build feels via augments.
 
-Long-term the agents *are* the players — humans just watch, tweak configs, and design new skills via JSON.
+> Terminology: **Player** = human only (you, watching). **Drifter** = in-world
+> body that survives/dies (2 syllables, teleported in). **Agent** = LLM mind
+> piloting a drifter; **Bot** = scripted mind piloting a drifter (baseline).
+> Never call a drifter a player. See `src/game/actor.ts` (canonical).
 
 See:
 
