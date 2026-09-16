@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges" role="img" aria-label="Drifter character, top-down view">
+  <title>Drifter — teleported survivor (base)</title>
+  <!-- Trim parts use currentColor so React UI can tint by controller:
+       player #fbbf24, agent #22d3ee, bot #9ca3af -->
+  <!-- ground shadow -->
+  <ellipse cx="16" cy="27.5" rx="9" ry="2.8" fill="#000000" opacity="0.42"/>
+  <!-- controller trim ring -->
+  <circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <!-- cloak body -->
+  <circle cx="16" cy="16.5" r="10" fill="#4b5568" stroke="#14171f" stroke-width="2"/>
+  <!-- tattered hem: 3 notches south -->
+  <path d="M8 22 L10 26 L12 22 Z" fill="#4b5568" stroke="#14171f" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M14 23 L16 27 L18 23 Z" fill="#4b5568" stroke="#14171f" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M20 22 L22 26 L24 22 Z" fill="#4b5568" stroke="#14171f" stroke-width="1" stroke-linejoin="round"/>
+  <!-- leather cross-straps (survivor kit) -->
+  <path d="M9 12 L23 21" stroke="#2a2118" stroke-width="2"/>
+  <path d="M23 12 L9 21" stroke="#2a2118" stroke-width="2"/>
+  <rect x="15" y="15" width="3" height="3" fill="#8a6b46" stroke="#14171f" stroke-width="1"/>
+  <!-- fur collar (barbarian) -->
+  <path d="M8 13 L11 10 L13 13 L10 15 Z" fill="#c9b896" stroke="#14171f" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M24 13 L21 10 L19 13 L22 15 Z" fill="#c9b896" stroke="#14171f" stroke-width="1" stroke-linejoin="round"/>
+  <!-- hood opening -->
+  <circle cx="16" cy="15" r="6" fill="#232838" stroke="#14171f" stroke-width="1.5"/>
+  <!-- face -->
+  <circle cx="16" cy="15.5" r="3.2" fill="#e0a46c"/>
+  <!-- eyes look north (facing = up) -->
+  <rect x="13.9" y="13.2" width="1.5" height="1.5" fill="#1a120b"/>
+  <rect x="16.6" y="13.2" width="1.5" height="1.5" fill="#1a120b"/>
+  <!-- rim light top-left so sprite pops on dark tiles -->
+  <path d="M9 12 A9 9 0 0 1 14 7.6" fill="none" stroke="#9aa3b5" stroke-width="1.5" opacity="0.9"/>
+  <!-- cudgel on east side (silhouette break + starter weapon read) -->
+  <g transform="rotate(28 25.5 16)">
+    <rect x="24" y="9" width="3" height="11" rx="1" fill="#8a6b46" stroke="#14171f" stroke-width="1"/>
+    <rect x="24" y="12" width="3" height="1.4" fill="#2a2118"/>
+    <rect x="24" y="15" width="3" height="1.4" fill="#2a2118"/>
+  </g>
+  <!-- facing wedge (north) in controller color -->
+  <path d="M16 0.5 L20.5 8 L11.5 8 Z" fill="currentColor" stroke="#14171f" stroke-width="1" stroke-linejoin="round"/>
+</svg>

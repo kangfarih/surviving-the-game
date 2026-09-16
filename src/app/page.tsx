@@ -5,12 +5,14 @@ import { GameCanvas, GameCanvasRef } from '@/components/GameCanvas';
 import { TopMenu } from '@/components/TopMenu';
 import { ConfigPanel } from '@/components/ConfigPanel';
 import { GameConfig, DEFAULT_CONFIG, WorldData } from '@/game/types';
+import type { CombatSnapshot } from '@/game/combat';
 
 export default function Home() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [config, setConfig] = useState<GameConfig>(DEFAULT_CONFIG);
   const [showGrid] = useState(false);
   const [dungeonCount, setDungeonCount] = useState(0);
+  const [combat, setCombat] = useState<CombatSnapshot | null>(null);
   const [boot, setBoot] = useState<{ done: boolean; world: WorldData | null }>({
     done: false,
     world: null,
@@ -102,6 +104,50 @@ export default function Home() {
     return result;
   };
 
+  const handleSummonAgent = () => {
+    const ok = gameCanvasRef.current?.summonAgent() ?? false;
+    setCombat(gameCanvasRef.current?.getCombatSnapshot() ?? null);
+    return ok;
+  };
+
+  const handleSummonDummy = () => {
+    const ok = gameCanvasRef.current?.summonDummy() ?? false;
+    setCombat(gameCanvasRef.current?.getCombatSnapshot() ?? null);
+    return ok;
+  };
+
+  const handleSummonBoth = () => {
+    const ok = gameCanvasRef.current?.summonBoth() ?? false;
+    setCombat(gameCanvasRef.current?.getCombatSnapshot() ?? null);
+    return ok;
+  };
+
+  const handleAttackOnce = () => {
+    const r = gameCanvasRef.current?.attackOnce() ?? null;
+    setCombat(gameCanvasRef.current?.getCombatSnapshot() ?? null);
+    return r;
+  };
+
+  const handleStartAuto = () => {
+    gameCanvasRef.current?.startAutoAttack();
+    setCombat(gameCanvasRef.current?.getCombatSnapshot() ?? null);
+  };
+
+  const handleStopAuto = () => {
+    gameCanvasRef.current?.stopAutoAttack();
+    setCombat(gameCanvasRef.current?.getCombatSnapshot() ?? null);
+  };
+
+  const handleResetDummy = () => {
+    gameCanvasRef.current?.resetDummy();
+    setCombat(gameCanvasRef.current?.getCombatSnapshot() ?? null);
+  };
+
+  const handleDismissCombat = () => {
+    gameCanvasRef.current?.dismissCombat();
+    setCombat(gameCanvasRef.current?.getCombatSnapshot() ?? null);
+  };
+
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-950">
       {/* Top Menu */}
@@ -123,9 +169,29 @@ export default function Home() {
             showGrid={showGrid}
             initialWorldData={boot.world}
             onStats={(dungeons) => setDungeonCount(dungeons)}
+            onCombat={(snap) => setCombat(snap)}
           />
         )}
       </div>
+
+      {/* Combat status chip (bottom-right): agent HP, dummy HP, last hit */}
+      {combat && (combat.agent || combat.dummy) && (
+        <div className="absolute bottom-4 right-4 z-40 bg-black/70 border border-amber-700/40 rounded px-3 py-2 text-xs text-amber-100 space-y-1">
+          <div className="font-semibold text-amber-200">Combat Test</div>
+          <div>
+            Agent:{' '}
+            {combat.agent ? `${combat.agent.hp}/${combat.agent.maxHp} HP` : '—'}
+            {'  •  '}Dummy:{' '}
+            {combat.dummy ? `${combat.dummy.hp}/${combat.dummy.maxHp} HP` : '—'}
+          </div>
+          <div className="text-gray-300">
+            {combat.lastHit
+              ? `Last hit: -${combat.lastHit.damage} (tick ${combat.lastHit.tick})${combat.lastHit.killed ? ' ☠' : ''}`
+              : 'No hits yet.'}
+            {combat.autoAttacking ? '  •  auto-attacking…' : ''}
+          </div>
+        </div>
+      )}
       
       {/* Config Panel */}
       <ConfigPanel
@@ -138,6 +204,15 @@ export default function Home() {
         onGenerateDungeon={handleGenerateDungeon}
         onDeleteDungeon={handleDeleteDungeon}
         dungeonCount={dungeonCount}
+        combat={combat}
+        onSummonAgent={handleSummonAgent}
+        onSummonDummy={handleSummonDummy}
+        onSummonBoth={handleSummonBoth}
+        onAttackOnce={handleAttackOnce}
+        onStartAuto={handleStartAuto}
+        onStopAuto={handleStopAuto}
+        onResetDummy={handleResetDummy}
+        onDismissCombat={handleDismissCombat}
       />
     </div>
   );
