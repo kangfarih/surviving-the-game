@@ -1,6 +1,17 @@
 import * as PIXI from 'pixi.js';
 import { Dungeon, GameConfig, TileType, TileMap, WorldData } from './types';
 import { generateWorldDungeons, renderWorld } from './dungeon/generator';
+import {
+  AttackResult,
+  CombatSnapshot,
+  applyAttack,
+  createAgentDrifter,
+  createDummy,
+  resetCombatant,
+  rollBasicAttack,
+  type Combatant,
+} from './combat';
+import { createDrifterSprite } from './sprites';
 
 // Color palette ported from the dungeon-generator.html prototype.
 const TILE_COLORS: Record<TileType, number> = {
@@ -46,6 +57,24 @@ export class GameEngine {
   private canvas: HTMLCanvasElement | null = null;
   private resizeObserver: ResizeObserver | null = null;
 
+  // --- Minimal combat test harness (agent vs dummy, basic attack only) ---
+  private combatLayer: PIXI.Container | null = null;
+  private agentSprite: PIXI.Sprite | null = null;
+  private dummyContainer: PIXI.Container | null = null;
+  private agentHpBar: PIXI.Graphics | null = null;
+  private dummyHpBar: PIXI.Graphics | null = null;
+  private floaters: Array<{ obj: PIXI.Text; life: number }> = [];
+  private agent: Combatant | null = null;
+  private dummy: Combatant | null = null;
+  private agentTile: { x: number; y: number } | null = null;
+  private dummyTile: { x: number; y: number } | null = null;
+  private autoAttacking = false;
+  private combatTick = 0;
+  private combatTimer: number | null = null;
+  private combatLog: AttackResult[] = [];
+  private lastHit: AttackResult | null = null;
+  private onCombatUpdate: ((snap: CombatSnapshot) => void) | null = null;
+
   constructor(config: GameConfig) {
     this.config = config;
   }
@@ -80,6 +109,13 @@ export class GameEngine {
     // Create grid overlay above tile graphics
     this.gridGraphics = new PIXI.Graphics();
     this.container.addChild(this.gridGraphics);
+
+    // Combat layer sits above tiles + grid (agent sprite, dummy, HP bars).
+    this.combatLayer = new PIXI.Container();
+    this.container.addChild(this.combatLayer);
+
+    // Animate floating damage numbers.
+    this.app.ticker.add(this.updateFloaters);
 
     // Generate initial tilemap
     this.generate();
@@ -176,12 +212,12 @@ export class GameEngine {
 
     // Create new graphics
     this.tileGraphics = new PIXI.Graphics();
-    this.container?.addChild(this.tileGraphics);
+    this.container?.addChildAt(this.tileGraphics, 0);
 
     // Draw tiles
     this.drawTileMap();
 
-    // Ensure grid overlay stays on top (fix z-order) and redraw it
+    // Ensure grid overlay stays on top of tiles but below combat.
     if (!this.gridGraphics) {
       this.gridGraphics = new PIXI.Graphics();
       this.container?.addChild(this.gridGraphics);
@@ -190,6 +226,13 @@ export class GameEngine {
       this.container?.addChild(this.gridGraphics);
     }
     this.drawGrid();
+
+    // Keep combat layer above tiles + grid.
+    if (this.combatLayer) {
+      this.container?.removeChild(this.combatLayer);
+      this.container?.addChild(this.combatLayer);
+      this.repositionCombatants();
+    }
 
     // Auto-cover the map to screen (no outside area visible)
     this.computeCoverScale();
@@ -512,12 +555,14 @@ export class GameEngine {
   }
 
   destroy(): void {
+    this.stopAutoAttack();
     window.removeEventListener('resize', this.handleResize);
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
     }
     if (this.app) {
+      this.app.ticker.remove(this.updateFloaters);
       this.app.destroy(true);
       this.app = null;
     }
@@ -526,4 +571,438 @@ export class GameEngine {
   getTileMap(): TileMap | null {
     return this.tileMap;
   }
+
+  // -------------------------------------------------------------------------
+  // Combat test harness: summon agent + dummy, basic attack, floating damage.
+  // -------------------------------------------------------------------------
+
+  /** Subscribe to combat snapshots (React panel). Returns unsubscribe. */
+  onCombat(cb: (snap: CombatSnapshot) => void): () => void {
+    this.onCombatUpdate = cb;
+    cb(this.getCombatSnapshot());
+    return () => {
+      if (this.onCombatUpdate === cb) this.onCombatUpdate = null;
+    };
+  }
+
+  getCombatSnapshot(): CombatSnapshot {
+    return {
+      agent: this.agent ? { ...this.agent } : null,
+      dummy: this.dummy ? { ...this.dummy } : null,
+      autoAttacking: this.autoAttacking,
+      tick: this.combatTick,
+      lastHit: this.lastHit ? { ...this.lastHit } : null,
+      log: this.combatLog.slice(-20).map((r) => ({ ...r })),
+    };
+  }
+
+  private emitCombat(): void {
+    this.onCombatUpdate?.(this.getCombatSnapshot());
+  }
+
+  private isWalkable(x: number, y: number): boolean {
+    const tm = this.tileMap;
+    if (!tm) return false;
+    if (x < 0 || y < 0 || x >= tm.width || y >= tm.height) return false;
+    const t = tm.tiles[y][x];
+    return t !== TileType.WALL && t !== TileType.EMPTY;
+  }
+
+  private tileToWorld(tx: number, ty: number): { x: number; y: number } {
+    const s = this.config.tilePixelSize;
+    return { x: (tx + 0.5) * s, y: (ty + 0.5) * s };
+  }
+
+  /** Find a walkable tile near map center, then a walkable neighbor for the dummy. */
+  private findArenaSpots(): [{ x: number; y: number }, { x: number; y: number }] | null {
+    const tm = this.tileMap;
+    if (!tm) return null;
+    const cx = Math.floor(tm.width / 2);
+    const cy = Math.floor(tm.height / 2);
+    const maxR = Math.max(tm.width, tm.height);
+    for (let r = 0; r < maxR; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const ax = cx + dx;
+          const ay = cy + dy;
+          if (!this.isWalkable(ax, ay)) continue;
+          const neighbors = [
+            { x: ax + 1, y: ay },
+            { x: ax - 1, y: ay },
+            { x: ax, y: ay + 1 },
+            { x: ax, y: ay - 1 },
+          ];
+          for (const n of neighbors) {
+            if (this.isWalkable(n.x, n.y)) {
+              return [{ x: ax, y: ay }, n];
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /** First walkable tile near center, optionally avoiding one tile. */
+  private findSingleSpot(
+    exclude: { x: number; y: number } | null = null,
+  ): { x: number; y: number } | null {
+    const tm = this.tileMap;
+    if (!tm) return null;
+    const cx = Math.floor(tm.width / 2);
+    const cy = Math.floor(tm.height / 2);
+    const maxR = Math.max(tm.width, tm.height);
+    for (let r = 0; r < maxR; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = cx + dx;
+          const y = cy + dy;
+          if (!this.isWalkable(x, y)) continue;
+          if (exclude && x === exclude.x && y === exclude.y) continue;
+          return { x, y };
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Walkable neighbor of `around`, avoiding `exclude`. Falls back to any spot. */
+  private findNeighborSpot(
+    around: { x: number; y: number },
+    exclude: { x: number; y: number } | null = null,
+  ): { x: number; y: number } | null {
+    const candidates = [
+      { x: around.x + 1, y: around.y },
+      { x: around.x - 1, y: around.y },
+      { x: around.x, y: around.y + 1 },
+      { x: around.x, y: around.y - 1 },
+    ];
+    for (const n of candidates) {
+      if (exclude && n.x === exclude.x && n.y === exclude.y) continue;
+      if (this.isWalkable(n.x, n.y)) return n;
+    }
+    return this.findSingleSpot(exclude ?? around);
+  }
+
+  private ensureHpBars(): void {
+    if (!this.combatLayer) return;
+    if (!this.agentHpBar) {
+      this.agentHpBar = new PIXI.Graphics();
+      this.combatLayer.addChild(this.agentHpBar);
+    }
+    if (!this.dummyHpBar) {
+      this.dummyHpBar = new PIXI.Graphics();
+      this.combatLayer.addChild(this.dummyHpBar);
+    }
+  }
+
+  private faceAgentToDummy(): void {
+    if (!this.agentSprite || !this.agentTile || !this.dummyTile) return;
+    const aPos = this.tileToWorld(this.agentTile.x, this.agentTile.y);
+    const dPos = this.tileToWorld(this.dummyTile.x, this.dummyTile.y);
+    const dx = dPos.x - aPos.x;
+    const dy = dPos.y - aPos.y;
+    this.agentSprite.rotation = Math.atan2(dx, -dy);
+  }
+
+  private spawnAgentSprite(): void {
+    if (!this.combatLayer || !this.agentTile || !this.agent) return;
+    if (this.agentSprite) {
+      const p = this.tileToWorld(this.agentTile.x, this.agentTile.y);
+      this.agentSprite.position.set(p.x, p.y);
+      return;
+    }
+    this.agentSprite = createDrifterSprite('agent', this.config.tilePixelSize, 0);
+    const aPos = this.tileToWorld(this.agentTile.x, this.agentTile.y);
+    this.agentSprite.position.set(aPos.x, aPos.y);
+    this.combatLayer.addChild(this.agentSprite);
+  }
+
+  private spawnDummySprite(): void {
+    if (!this.combatLayer || !this.dummyTile || !this.dummy) return;
+    if (this.dummyContainer) {
+      const p = this.tileToWorld(this.dummyTile.x, this.dummyTile.y);
+      this.dummyContainer.position.set(p.x, p.y);
+      return;
+    }
+    this.dummyContainer = new PIXI.Container();
+    const dPos = this.tileToWorld(this.dummyTile.x, this.dummyTile.y);
+    this.dummyContainer.position.set(dPos.x, dPos.y);
+    const s = this.config.tilePixelSize;
+    const body = new PIXI.Graphics();
+    // Post
+    body.beginFill(0x8a6b46);
+    body.drawRect(-s * 0.12, -s * 0.6, s * 0.24, s * 1.2);
+    body.endFill();
+    // Cross-arm
+    body.beginFill(0x8a6b46);
+    body.drawRect(-s * 0.5, -s * 0.35, s * 1.0, s * 0.2);
+    body.endFill();
+    // Straw head (target circle)
+    body.beginFill(0xc9b896);
+    body.lineStyle(2, 0x14171f, 1);
+    body.drawCircle(0, -s * 0.55, s * 0.32);
+    body.endFill();
+    body.beginFill(0x7a2e2e);
+    body.drawCircle(0, -s * 0.55, s * 0.14);
+    body.endFill();
+    body.lineStyle(0);
+    this.dummyContainer.addChild(body);
+    this.combatLayer.addChild(this.dummyContainer);
+  }
+
+  /** Summon only the agent drifter. Idempotent — keeps position if present. */
+  summonAgent(): boolean {
+    if (!this.app || !this.container || !this.combatLayer || !this.tileMap) return false;
+    if (this.agent && this.agentTile && this.agentSprite) return true;
+    // Place next to the dummy when it already exists.
+    const tile = this.dummyTile
+      ? (this.findNeighborSpot(this.dummyTile, this.dummyTile) ?? this.findSingleSpot(this.dummyTile))
+      : (this.agentTile ?? this.findSingleSpot(null));
+    if (!tile) return false;
+    this.agentTile = tile;
+    if (!this.agent) this.agent = createAgentDrifter();
+    this.spawnAgentSprite();
+    this.ensureHpBars();
+    this.faceAgentToDummy();
+    this.drawHpBars();
+    this.emitCombat();
+    return true;
+  }
+
+  /** Summon only the training dummy. Idempotent — keeps position if present. */
+  summonDummy(): boolean {
+    if (!this.app || !this.container || !this.combatLayer || !this.tileMap) return false;
+    if (this.dummy && this.dummyTile && this.dummyContainer) return true;
+    // Place next to the agent when it already exists.
+    const tile = this.agentTile
+      ? (this.findNeighborSpot(this.agentTile, this.agentTile) ?? this.findSingleSpot(this.agentTile))
+      : (this.dummyTile ?? this.findSingleSpot(null));
+    if (!tile) return false;
+    this.dummyTile = tile;
+    if (!this.dummy) this.dummy = createDummy();
+    else if (!this.dummy.alive) resetCombatant(this.dummy);
+    this.spawnDummySprite();
+    if (this.dummyContainer) this.dummyContainer.alpha = 1;
+    this.ensureHpBars();
+    this.faceAgentToDummy();
+    this.drawHpBars();
+    this.emitCombat();
+    return true;
+  }
+
+  /** Summon an agent drifter + training dummy side-by-side near map center. */
+  summonAgentAndDummy(): boolean {
+    if (!this.app || !this.container || !this.combatLayer || !this.tileMap) return false;
+    // If both already out, keep positions.
+    if (this.agent && this.dummy && this.agentTile && this.dummyTile) return true;
+    // Fresh pair placement when neither exists — keeps the classic side-by-side.
+    if (!this.agentTile && !this.dummyTile) {
+      const spots = this.findArenaSpots();
+      if (!spots) return false;
+      const [agentTile, dummyTile] = spots;
+      this.agentTile = agentTile;
+      this.dummyTile = dummyTile;
+      this.stopAutoAttack();
+      this.clearCombatSprites();
+      this.combatLog = [];
+      this.lastHit = null;
+      this.combatTick = 0;
+      this.agent = createAgentDrifter();
+      this.dummy = createDummy();
+      this.spawnAgentSprite();
+      this.spawnDummySprite();
+      this.ensureHpBars();
+      this.faceAgentToDummy();
+      this.drawHpBars();
+      this.emitCombat();
+      return true;
+    }
+    // Otherwise summon whichever side is missing next to the other.
+    const okA = this.summonAgent();
+    const okD = this.summonDummy();
+    return okA && okD;
+  }
+
+  /** Remove combat sprites without clearing sim state listeners. */
+  private clearCombatSprites(): void {
+    if (this.agentSprite) {
+      this.agentSprite.destroy();
+      this.agentSprite = null;
+    }
+    if (this.dummyContainer) {
+      this.dummyContainer.destroy({ children: true });
+      this.dummyContainer = null;
+    }
+    if (this.agentHpBar) {
+      this.agentHpBar.destroy();
+      this.agentHpBar = null;
+    }
+    if (this.dummyHpBar) {
+      this.dummyHpBar.destroy();
+      this.dummyHpBar = null;
+    }
+    for (const f of this.floaters) {
+      this.combatLayer?.removeChild(f.obj);
+      f.obj.destroy();
+    }
+    this.floaters = [];
+  }
+
+  /** Dismiss agent + dummy, stop auto-attack. */
+  dismissCombat(): void {
+    this.stopAutoAttack();
+    this.clearCombatSprites();
+    this.agent = null;
+    this.dummy = null;
+    this.agentTile = null;
+    this.dummyTile = null;
+    this.lastHit = null;
+    this.emitCombat();
+  }
+
+  /** Reset dummy HP (revive) without moving anything. */
+  resetDummy(): void {
+    if (!this.dummy) return;
+    resetCombatant(this.dummy);
+    this.drawHpBars();
+    // Clear grey-out on revive.
+    if (this.dummyContainer) this.dummyContainer.alpha = 1;
+    this.emitCombat();
+  }
+
+  private drawHpBars(): void {
+    if (!this.agentHpBar || !this.dummyHpBar) return;
+    const s = this.config.tilePixelSize;
+    const w = s * 1.6;
+    const h = Math.max(3, s * 0.22);
+    const draw = (g: PIXI.Graphics, c: Combatant | null, wx: number, wy: number) => {
+      g.clear();
+      if (!c) return;
+      const pct = c.maxHp > 0 ? Math.max(0, c.hp / c.maxHp) : 0;
+      const x = wx - w / 2;
+      const y = wy - s * 1.05 - h;
+      g.beginFill(0x000000, 0.75);
+      g.drawRect(x - 1, y - 1, w + 2, h + 2);
+      g.endFill();
+      const color = pct > 0.5 ? 0x4ade80 : pct > 0.25 ? 0xfbbf24 : 0xef4444;
+      g.beginFill(color, 1);
+      g.drawRect(x, y, w * pct, h);
+      g.endFill();
+    };
+    if (this.agentTile) {
+      const p = this.tileToWorld(this.agentTile.x, this.agentTile.y);
+      draw(this.agentHpBar, this.agent, p.x, p.y);
+    }
+    if (this.dummyTile) {
+      const p = this.tileToWorld(this.dummyTile.x, this.dummyTile.y);
+      draw(this.dummyHpBar, this.dummy, p.x, p.y);
+    }
+  }
+
+  private repositionCombatants(): void {
+    if (!this.agentTile || !this.dummyTile) return;
+    if (this.agentSprite) {
+      const p = this.tileToWorld(this.agentTile.x, this.agentTile.y);
+      this.agentSprite.position.set(p.x, p.y);
+      this.agentSprite.width = this.config.tilePixelSize * 1.2;
+      this.agentSprite.height = this.config.tilePixelSize * 1.2;
+    }
+    if (this.dummyContainer && this.dummyTile) {
+      const p = this.tileToWorld(this.dummyTile.x, this.dummyTile.y);
+      this.dummyContainer.position.set(p.x, p.y);
+    }
+    this.drawHpBars();
+  }
+
+  /** One basic attack from the agent to the dummy. Returns null if N/A. */
+  attackOnce(rng: () => number = Math.random): AttackResult | null {
+    if (!this.agent || !this.dummy) return null;
+    if (!this.agent.alive || !this.dummy.alive) return null;
+    this.combatTick += 1;
+    const result = rollBasicAttack(this.agent, this.dummy, this.combatTick, rng);
+    applyAttack(this.dummy, result);
+    this.lastHit = result;
+    this.combatLog.push(result);
+    if (this.combatLog.length > 100) this.combatLog.shift();
+    this.spawnFloater(result.damage, result.killed);
+    this.drawHpBars();
+    if (result.killed) {
+      // Grey out the dummy + stop the loop so the kill reads clearly.
+      if (this.dummyContainer) this.dummyContainer.alpha = 0.45;
+      this.stopAutoAttack();
+    }
+    this.emitCombat();
+    return result;
+  }
+
+  /** Start the auto-attack loop (default 1 hit / 800ms). */
+  startAutoAttack(intervalMs = 800): void {
+    if (!this.agent || !this.dummy) return;
+    if (!this.dummy.alive) resetCombatant(this.dummy);
+    if (this.dummyContainer) this.dummyContainer.alpha = 1;
+    this.drawHpBars();
+    this.stopAutoAttack();
+    this.autoAttacking = true;
+    // Immediate feedback: first hit lands at once, then on interval.
+    this.attackOnce();
+    // If the first hit killed (tiny HP pool), don't schedule the loop.
+    if (!this.dummy?.alive) {
+      this.autoAttacking = false;
+      this.emitCombat();
+      return;
+    }
+    this.combatTimer = window.setInterval(() => {
+      const r = this.attackOnce();
+      if (!r) this.stopAutoAttack();
+      // attackOnce already stops + emits on kill; keep flag in sync.
+      if (!this.dummy?.alive) this.autoAttacking = false;
+    }, intervalMs);
+    this.emitCombat();
+  }
+
+  stopAutoAttack(): void {
+    if (this.combatTimer !== null) {
+      window.clearInterval(this.combatTimer);
+      this.combatTimer = null;
+    }
+    if (this.autoAttacking) {
+      this.autoAttacking = false;
+      this.emitCombat();
+    }
+  }
+
+  private spawnFloater(damage: number, killed: boolean): void {
+    if (!this.combatLayer || !this.dummyTile) return;
+    const p = this.tileToWorld(this.dummyTile.x, this.dummyTile.y);
+    const text = new PIXI.Text(killed ? `${damage} ☠` : `-${damage}`, {
+      fontFamily: 'monospace',
+      fontSize: Math.max(12, this.config.tilePixelSize * 0.9),
+      fill: killed ? '#ef4444' : '#fbbf24',
+      stroke: '#000000',
+      strokeThickness: 3,
+    });
+    text.anchor.set(0.5, 1);
+    text.position.set(p.x, p.y - this.config.tilePixelSize * 1.3);
+    this.combatLayer.addChild(text);
+    this.floaters.push({ obj: text, life: 1.0 });
+  }
+
+  private updateFloaters = (delta: number): void => {
+    if (this.floaters.length === 0) return;
+    const dt = delta / 60;
+    for (let i = this.floaters.length - 1; i >= 0; i--) {
+      const f = this.floaters[i];
+      f.life -= dt * 0.9;
+      f.obj.position.y -= dt * 28;
+      f.obj.alpha = Math.max(0, Math.min(1, f.life * 1.5));
+      if (f.life <= 0) {
+        this.combatLayer?.removeChild(f.obj);
+        f.obj.destroy();
+        this.floaters.splice(i, 1);
+      }
+    }
+  };
 }

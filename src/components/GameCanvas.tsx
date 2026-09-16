@@ -3,12 +3,14 @@
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { GameEngine } from '@/game/engine';
 import { GameConfig, WorldData } from '@/game/types';
+import type { AttackResult, CombatSnapshot } from '@/game/combat';
 
 interface GameCanvasProps {
   config: GameConfig;
   showGrid: boolean;
   initialWorldData?: WorldData | null;
   onStats?: (dungeonCount: number, roomCount: number) => void;
+  onCombat?: (snap: CombatSnapshot) => void;
 }
 
 export interface GameCanvasRef {
@@ -19,10 +21,19 @@ export interface GameCanvasRef {
   setShowGrid: (show: boolean) => void;
   getWorldData: () => WorldData | null;
   loadWorldData: (data: WorldData) => void;
+  summonAgent: () => boolean;
+  summonDummy: () => boolean;
+  summonBoth: () => boolean;
+  dismissCombat: () => void;
+  attackOnce: () => AttackResult | null;
+  startAutoAttack: () => void;
+  stopAutoAttack: () => void;
+  resetDummy: () => void;
+  getCombatSnapshot: () => CombatSnapshot | null;
 }
 
 export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
-  ({ config, showGrid, initialWorldData, onStats }, ref) => {
+  ({ config, showGrid, initialWorldData, onStats, onCombat }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<GameEngine | null>(null);
     const [isClient, setIsClient] = useState(false);
@@ -34,6 +45,8 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
     // Mirror latest callback without re-running the init effect.
     const onStatsRef = useRef(onStats);
     onStatsRef.current = onStats;
+    const onCombatRef = useRef(onCombat);
+    onCombatRef.current = onCombat;
 
     const reportStats = (engine: GameEngine) => {
       const data = engine.getWorldData();
@@ -72,6 +85,7 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
               engine.loadWorldData(bootWorld);
             }
             reportStats(engine);
+            engine.onCombat((snap) => onCombatRef.current?.(snap));
           } else {
             engine.destroy();
           }
@@ -136,6 +150,15 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
       loadWorldData: (data: WorldData) => {
         engineRef.current?.loadWorldData(data);
       },
+      summonAgent: () => engineRef.current?.summonAgent() ?? false,
+      summonDummy: () => engineRef.current?.summonDummy() ?? false,
+      summonBoth: () => engineRef.current?.summonAgentAndDummy() ?? false,
+      dismissCombat: () => engineRef.current?.dismissCombat(),
+      attackOnce: () => engineRef.current?.attackOnce() ?? null,
+      startAutoAttack: () => engineRef.current?.startAutoAttack(),
+      stopAutoAttack: () => engineRef.current?.stopAutoAttack(),
+      resetDummy: () => engineRef.current?.resetDummy(),
+      getCombatSnapshot: () => engineRef.current?.getCombatSnapshot() ?? null,
     }));
 
     useEffect(() => {
