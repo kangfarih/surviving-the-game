@@ -30,11 +30,17 @@ export class GameEngine {
   private lastMousePos: { x: number; y: number } = { x: 0, y: 0 };
   private offset: { x: number; y: number } = { x: 0, y: 0 };
   private scale: number = 1;
-  private fitScale: number = 1;
+  private coverScale: number = 1;
   private minScale: number = MIN_ZOOM;
+
+  /** Upper zoom bound; guards tiny maps where cover > 5. */
+  private get maxZoom(): number {
+    return Math.max(MAX_ZOOM, this.minScale);
+  }
   private canvasWidth: number = 0;
   private canvasHeight: number = 0;
   private canvas: HTMLCanvasElement | null = null;
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor(config: GameConfig) {
     this.config = config;
@@ -43,9 +49,12 @@ export class GameEngine {
   async init(canvas: HTMLCanvasElement): Promise<void> {
     this.canvas = canvas;
 
-    // Set canvas to full screen dimensions
-    this.canvasWidth = window.innerWidth;
-    this.canvasHeight = window.innerHeight;
+    // Size from the canvas's actual container (the flex-1 area below the
+    // top menu), NOT window.innerWidth/Height which includes the menu and
+    // would render a taller image than visible (cropping the map bottom).
+    const { width, height } = this.measureContainerSize();
+    this.canvasWidth = width;
+    this.canvasHeight = height;
     canvas.width = this.canvasWidth;
     canvas.height = this.canvasHeight;
 
@@ -76,22 +85,67 @@ export class GameEngine {
 
     // Handle window resize
     window.addEventListener('resize', this.handleResize);
+
+    // Re-fit when the parent container layout changes (menu height,
+    // flex layout, etc.) even without a window resize.
+    if (
+      typeof ResizeObserver !== 'undefined' &&
+      canvas.parentElement
+    ) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.handleResize();
+      });
+      this.resizeObserver.observe(canvas.parentElement);
+    }
+  }
+
+  /**
+   * Measure the canvas's actual container size. Falls back to the canvas
+   * CSS size, then to window minus the measured top menu height.
+   */
+  private measureContainerSize(): { width: number; height: number } {
+    const parent = this.canvas?.parentElement;
+    let w = parent?.clientWidth ?? 0;
+    let h = parent?.clientHeight ?? 0;
+
+    if ((!w || !h) && this.canvas) {
+      w = w || this.canvas.clientWidth;
+      h = h || this.canvas.clientHeight;
+    }
+
+    if ((!w || !h) && typeof window !== 'undefined') {
+      const header = document.querySelector('header');
+      const headerHeight =
+        header instanceof HTMLElement ? header.offsetHeight : 0;
+      w = w || window.innerWidth;
+      h = h || window.innerHeight - headerHeight;
+    }
+
+    return {
+      width: Math.max(1, Math.floor(w)),
+      height: Math.max(1, Math.floor(h)),
+    };
   }
 
   private handleResize = (): void => {
     if (!this.app || !this.canvas) return;
 
-    this.canvasWidth = window.innerWidth;
-    this.canvasHeight = window.innerHeight;
+    const { width, height } = this.measureContainerSize();
+
+    // No-op if the container size did not actually change.
+    if (width === this.canvasWidth && height === this.canvasHeight) return;
+
+    this.canvasWidth = width;
+    this.canvasHeight = height;
 
     // Update both canvas element and renderer
     this.canvas.width = this.canvasWidth;
     this.canvas.height = this.canvasHeight;
     this.app.renderer.resize(this.canvasWidth, this.canvasHeight);
 
-    // Recalculate fit scale and re-fit the map
-    this.computeFitScale();
-    this.applyFitView();
+    // Recalculate cover scale and re-apply the cover view
+    this.computeCoverScale();
+    this.applyCoverView();
   };
 
   generate(): void {
@@ -124,12 +178,12 @@ export class GameEngine {
     }
     this.drawGrid();
 
-    // Auto-fit the map to screen
-    this.computeFitScale();
-    this.applyFitView();
+    // Auto-cover the map to screen (no outside area visible)
+    this.computeCoverScale();
+    this.applyCoverView();
   }
 
-  private computeFitScale(): void {
+  private computeCoverScale(): void {
     if (!this.tileMap) {
       this.minScale = MIN_ZOOM;
       return;
@@ -138,22 +192,22 @@ export class GameEngine {
     const mapPixelWidth = this.tileMap.width * this.config.tilePixelSize;
     const mapPixelHeight = this.tileMap.height * this.config.tilePixelSize;
 
-    // Scale to fit 90% of the screen to leave a margin
-    this.fitScale =
-      Math.min(
-        this.canvasWidth / mapPixelWidth,
-        this.canvasHeight / mapPixelHeight,
-      ) * 0.9;
+    // Scale to cover the entire canvas so the map always fills it.
+    // Exact cover, no margin: zooming out past this would reveal outside.
+    this.coverScale = Math.max(
+      this.canvasWidth / mapPixelWidth,
+      this.canvasHeight / mapPixelHeight,
+    );
 
-    // Minimum zoom is the fit scale: the whole map plus outside margin
-    // stays visible, and the user can never zoom out past that.
-    this.minScale = this.fitScale;
+    // Minimum zoom is the cover scale: the map always covers the canvas,
+    // and the user can never zoom out past that.
+    this.minScale = this.coverScale;
   }
 
-  private applyFitView(): void {
+  private applyCoverView(): void {
     if (!this.container || !this.tileMap) return;
 
-    this.scale = this.fitScale;
+    this.scale = this.coverScale;
     this.container.scale.set(this.scale);
 
     const mapPixelWidth = this.tileMap.width * this.config.tilePixelSize;
@@ -175,13 +229,15 @@ export class GameEngine {
     const scaledW = mapPixelWidth * this.scale;
     const scaledH = mapPixelHeight * this.scale;
 
-    // Allow the map to be smaller than the canvas (centered),
-    // but prevent scrolling past the edges when the map is larger.
+    // Never reveal outside the map: offset must keep the scaled map
+    // covering the whole canvas. At/above cover the scaled map is larger
+    // than the canvas, so clamp to [canvas - scaled, 0]. Guard the
+    // below-cover case (shouldn't happen) by centering that axis.
     if (scaledW <= this.canvasWidth) {
-      // Map fits horizontally — center it
+      // Map narrower than canvas — center it
       this.offset.x = (this.canvasWidth - scaledW) / 2;
     } else {
-      // Clamp so map edges don't go past canvas edges
+      // Clamp so no empty/outside area is visible horizontally
       this.offset.x = Math.min(0, Math.max(this.canvasWidth - scaledW, this.offset.x));
     }
 
@@ -198,7 +254,7 @@ export class GameEngine {
   private zoomAtPoint(newScale: number, clientX: number, clientY: number): void {
     if (!this.container || !this.tileMap) return;
 
-    const clampedScale = Math.max(this.minScale, Math.min(MAX_ZOOM, newScale));
+    const clampedScale = Math.max(this.minScale, Math.min(this.maxZoom, newScale));
 
     // Mouse position relative to canvas
     const mouseX = clientX;
@@ -340,18 +396,18 @@ export class GameEngine {
       this.isDragging = false;
     });
 
-    // Double click - toggle between fit-view and 2x zoom (centered on click)
+    // Double click - toggle between cover-view and 2x zoom (centered on click)
     canvas.addEventListener('dblclick', (e) => {
       if (!this.container) return;
 
-      if (Math.abs(this.scale - this.fitScale) < 0.01) {
-        // Currently at fit-view, zoom in ~2x at click position.
-        // Use 2x fit when fit itself is large so the target never
+      if (Math.abs(this.scale - this.coverScale) < 0.01) {
+        // Currently at cover-view, zoom in ~2x at click position.
+        // Use 2x cover when cover itself is large so the target never
         // ends up below minScale; zoomAtPoint clamps to [minScale, MAX].
-        this.zoomAtPoint(Math.max(2, this.fitScale * 2), e.clientX, e.clientY);
+        this.zoomAtPoint(Math.max(2, this.coverScale * 2), e.clientX, e.clientY);
       } else {
-        // Not at fit-view, return to fit (== minScale), never below.
-        this.applyFitView();
+        // Not at cover-view, return to cover (== minScale), never below.
+        this.applyCoverView();
       }
     });
 
@@ -364,7 +420,7 @@ export class GameEngine {
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
       const newScale = Math.max(
         this.minScale,
-        Math.min(MAX_ZOOM, this.scale * zoomFactor),
+        Math.min(this.maxZoom, this.scale * zoomFactor),
       );
 
       this.zoomAtPoint(newScale, e.clientX, e.clientY);
@@ -378,6 +434,10 @@ export class GameEngine {
 
   destroy(): void {
     window.removeEventListener('resize', this.handleResize);
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
     if (this.app) {
       this.app.destroy(true);
       this.app = null;

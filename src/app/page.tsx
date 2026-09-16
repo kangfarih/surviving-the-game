@@ -27,7 +27,6 @@ export default function Home() {
       {/* Top Menu */}
       <TopMenu
         onConfigClick={() => setIsConfigOpen(true)}
-        onGenerateClick={handleGenerate}
         showGrid={showGrid}
         onToggleGrid={() => setShowGrid((prev) => !prev)}
       />
@@ -43,6 +42,7 @@ export default function Home() {
         config={config}
         onConfigChange={handleConfigChange}
         onClose={() => setIsConfigOpen(false)}
+        onGenerate={handleGenerate}
       />
     </div>
   );

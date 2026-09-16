@@ -4,12 +4,11 @@ import React from 'react';
 
 interface TopMenuProps {
   onConfigClick: () => void;
-  onGenerateClick: () => void;
   showGrid: boolean;
   onToggleGrid: () => void;
 }
 
-export function TopMenu({ onConfigClick, onGenerateClick, showGrid, onToggleGrid }: TopMenuProps) {
+export function TopMenu({ onConfigClick, showGrid, onToggleGrid }: TopMenuProps) {
   return (
     <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-amber-900/30 px-4 py-2">
       <div className="flex items-center justify-between">
@@ -19,24 +18,6 @@ export function TopMenu({ onConfigClick, onGenerateClick, showGrid, onToggleGrid
         </div>
         
         <div className="flex items-center gap-2">
-          <button
-            onClick={onGenerateClick}
-            className="px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors flex items-center gap-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Generate New
-          </button>
           <button
             onClick={onToggleGrid}
             aria-pressed={showGrid}
