@@ -112,7 +112,8 @@ export default function Home() {
     <div className="fixed inset-0 flex flex-col bg-gray-950">
       {/* Top Menu */}
       <TopMenu
-        onConfigClick={() => setIsConfigOpen(true)}
+        onConfigClick={() => setIsConfigOpen((prev) => !prev)}
+        isOpen={isConfigOpen}
       />
       
       {/* Game Canvas - Full remaining height */}

@@ -278,8 +278,8 @@ export function ConfigPanel({
   };
 
   const renderNumberRow = (key: NumericFieldKey, label: string) => (
-    <div className="flex items-center justify-between gap-2">
-      <label htmlFor={key} className="text-sm text-gray-300">
+    <div className="flex flex-col gap-1">
+      <label htmlFor={key} className="text-xs text-gray-300 truncate">
         {label}
       </label>
       <input
@@ -298,21 +298,13 @@ export function ConfigPanel({
             (e.target as HTMLInputElement).blur();
           }
         }}
-        className="bg-gray-900 border border-gray-600 text-amber-100 rounded w-24 px-2 py-1 text-right"
+        className="bg-gray-900 border border-gray-600 text-amber-100 rounded w-full px-2 py-1 text-right"
       />
     </div>
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/70"
-        onClick={handleClose}
-      />
-
-      {/* Panel */}
-      <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto border border-amber-900/30">
+    <div className="absolute top-14 right-4 z-50 w-full max-w-md max-h-[calc(100%-4.5rem)] overflow-y-auto bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-2xl border border-amber-900/30">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-amber-900/30 bg-gray-800/50">
           <h2 className="text-xl font-bold text-amber-100">Configuration</h2>
@@ -343,9 +335,11 @@ export function ConfigPanel({
           <section>
             <h3 className="text-lg font-semibold text-amber-200 mb-3">Map Settings</h3>
             <div className="space-y-3">
-              {renderNumberRow('mapWidth', 'Map Width (tiles)')}
-              {renderNumberRow('mapHeight', 'Map Height (tiles)')}
-              {renderNumberRow('tilePixelSize', 'Tile Pixel Size (px)')}
+              <div className="grid grid-cols-2 gap-3">
+                {renderNumberRow('mapWidth', 'Map Width')}
+                {renderNumberRow('mapHeight', 'Map Height')}
+                {renderNumberRow('tilePixelSize', 'Tile Size (px)')}
+              </div>
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -378,10 +372,10 @@ export function ConfigPanel({
                 </label>
               </div>
               {config.includeCity && (
-                <>
-                  {renderNumberRow('cityWidth', 'City Width (tiles)')}
-                  {renderNumberRow('cityHeight', 'City Height (tiles)')}
-                </>
+                <div className="grid grid-cols-2 gap-3">
+                  {renderNumberRow('cityWidth', 'City Width')}
+                  {renderNumberRow('cityHeight', 'City Height')}
+                </div>
               )}
             </div>
           </section>
@@ -390,14 +384,42 @@ export function ConfigPanel({
           <section>
             <h3 className="text-lg font-semibold text-amber-200 mb-3">Dungeon Settings</h3>
             <div className="space-y-3">
-              {renderNumberRow('roomsPerDungeon', 'Rooms per Dungeon')}
-              {renderNumberRow('minRoomSize', 'Min Room Size (tiles)')}
-              {renderNumberRow('maxRoomSize', 'Max Room Size (tiles)')}
-              {renderNumberRow('corridorWidth', 'Corridor Width (tiles)')}
+              <div className="grid grid-cols-2 gap-3">
+                {renderNumberRow('roomsPerDungeon', 'Rooms per Dungeon')}
+                {renderNumberRow('minRoomSize', 'Min Room Size')}
+                {renderNumberRow('maxRoomSize', 'Max Room Size')}
+                {renderNumberRow('corridorWidth', 'Corridor Width')}
+              </div>
               <p className="text-sm text-gray-400">
                 Dungeons on map:{' '}
                 <span className="text-amber-100 font-semibold">{dungeonCount}</span>
               </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleGenerateDungeon}
+                  className="flex-1 px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Generate Dungeon
+                </button>
+                <button
+                  onClick={handleDeleteDungeon}
+                  className="flex-1 px-4 py-2 bg-orange-900/60 hover:bg-orange-800/60 text-orange-100 rounded border border-orange-700/50 transition-colors"
+                >
+                  Delete Dungeon
+                </button>
+              </div>
               {dungeonMsg && (
                 <p className="text-sm text-red-300">{dungeonMsg}</p>
               )}
@@ -467,71 +489,10 @@ export function ConfigPanel({
               )}
             </div>
           </section>
-
-          {/* Legend */}
-          <section>
-            <h3 className="text-lg font-semibold text-amber-200 mb-3">Legend</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#4169e1]" />
-                <span className="text-gray-300">Start Room</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#8b2252]" />
-                <span className="text-gray-300">Boss Room</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#6b8b6b]" />
-                <span className="text-gray-300">City Floor</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#5a6a5a]" />
-                <span className="text-gray-300">City Wall</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#8b7355]" />
-                <span className="text-gray-300">Room Floor</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#4a4a4a]" />
-                <span className="text-gray-300">Wall</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#9b8b6b]" />
-                <span className="text-gray-300">Corridor</span>
-              </div>
-            </div>
-          </section>
         </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-amber-900/30 flex flex-col gap-2 bg-gray-800/50">
-          <div className="flex gap-2">
-            <button
-              onClick={handleGenerateDungeon}
-              className="flex-1 px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors flex items-center justify-center gap-2"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Generate Dungeon
-            </button>
-            <button
-              onClick={handleDeleteDungeon}
-              className="flex-1 px-4 py-2 bg-orange-900/60 hover:bg-orange-800/60 text-orange-100 rounded border border-orange-700/50 transition-colors"
-            >
-              Delete Dungeon
-            </button>
-          </div>
           <div className="flex gap-2">
             <button
               onClick={handleReset}
@@ -543,11 +504,10 @@ export function ConfigPanel({
               onClick={handleClose}
               className="flex-1 px-4 py-2 bg-amber-900/50 hover:bg-amber-800/50 text-amber-100 rounded transition-colors border border-amber-700/50"
             >
-              Apply & Close
+              Close
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 }

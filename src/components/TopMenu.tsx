@@ -4,21 +4,26 @@ import React from 'react';
 
 interface TopMenuProps {
   onConfigClick: () => void;
+  isOpen?: boolean;
 }
 
-export function TopMenu({ onConfigClick }: TopMenuProps) {
+export function TopMenu({ onConfigClick, isOpen = false }: TopMenuProps) {
   return (
     <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-amber-900/30 px-4 py-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h1 className="text-amber-100 font-bold text-lg tracking-wide">Surviving The Game</h1>
-          <span className="text-amber-200/60 text-sm">Dungeon Generator</span>
         </div>
         
         <div className="flex items-center gap-2">
           <button
             onClick={onConfigClick}
-            className="px-4 py-2 bg-amber-900/60 hover:bg-amber-800/60 text-amber-100 rounded border border-amber-700/50 transition-colors flex items-center gap-2"
+            aria-expanded={isOpen}
+            className={`px-4 py-2 rounded border transition-colors flex items-center gap-2 ${
+              isOpen
+                ? 'bg-amber-700/60 hover:bg-amber-600/60 text-amber-50 border-amber-500/50'
+                : 'bg-amber-900/60 hover:bg-amber-800/60 text-amber-100 border-amber-700/50'
+            }`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -85,138 +85,36 @@ export function getCityRect(config: GameConfig): Rect | null {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Room placement with directional flow
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Tunnel-carve + Room Stamping (digger agent) — tuning knobs
-// ---------------------------------------------------------------------------
-
-/** Digger walk steps per requested room (total steps = roomsPerDungeon * this). */
-export const DIGGER_STEPS_PER_ROOM = 14;
-/** Chance the digger keeps walking the same direction each step (momentum). */
-export const DIGGER_MOMENTUM = 0.65;
-/** Path steps between room stamp attempts. */
-export const STAMP_INTERVAL = 10;
-/** Extra forward points to try when a stamp anchor overlaps (lookahead). */
-export const STAMP_LOOKAHEAD = 5;
-
 /**
- * Cardinal directions as vectors.  Index matters for the momentum logic:
- *   0 = right, 1 = left, 2 = down, 3 = up
- */
-const DIRECTIONS: { dx: number; dy: number }[] = [
-  { dx: 1, dy: 0 },   // right
-  { dx: -1, dy: 0 },  // left
-  { dx: 0, dy: 1 },   // down
-  { dx: 0, dy: -1 },  // up
-];
-
-/**
- * Digger agent: random-walk inside `bounds` (inset 2 tiles) for up to
- * `maxSteps` steps, with momentum (65% continue straight). Returns the
- * recorded path points, starting from a random point inset 3 tiles.
- */
-function carveDiggerPath(
-  rng: SeededRandom,
-  bounds: Rect,
-  maxSteps: number,
-): Point[] {
-  const minX = bounds.x + 2;
-  const maxX = bounds.x + bounds.width - 1 - 2;
-  const minY = bounds.y + 2;
-  const maxY = bounds.y + bounds.height - 1 - 2;
-
-  // Degenerate bounds: return just the center point.
-  if (minX > maxX || minY > maxY) {
-    return [
-      {
-        x: bounds.x + Math.floor(bounds.width / 2),
-        y: bounds.y + Math.floor(bounds.height / 2),
-      },
-    ];
-  }
-
-  // Start inset 3 tiles, clamped into the walk area (midpoint fallback for
-  // tiny bounds where the inset range is inverted).
-  const clamp = (v: number, lo: number, hi: number) =>
-    Math.max(lo, Math.min(hi, v));
-  const sxMin = bounds.x + 3;
-  const sxMax = bounds.x + bounds.width - 1 - 3;
-  const syMin = bounds.y + 3;
-  const syMax = bounds.y + bounds.height - 1 - 3;
-  let x =
-    sxMin <= sxMax
-      ? rng.nextInt(sxMin, sxMax)
-      : bounds.x + Math.floor(bounds.width / 2);
-  let y =
-    syMin <= syMax
-      ? rng.nextInt(syMin, syMax)
-      : bounds.y + Math.floor(bounds.height / 2);
-  x = clamp(x, minX, maxX);
-  y = clamp(y, minY, maxY);
-
-  const path: Point[] = [{ x, y }];
-  let dir = rng.pick(DIRECTIONS);
-
-  for (let step = 0; step < maxSteps; step++) {
-    if (rng.next() >= DIGGER_MOMENTUM) {
-      dir = rng.pick(DIRECTIONS);
-    }
-    let nx = x + dir.dx;
-    let ny = y + dir.dy;
-    if (nx < minX || nx > maxX || ny < minY || ny > maxY) {
-      // Turn when hitting the inset wall; skip the step if still outside.
-      dir = rng.pick(DIRECTIONS);
-      nx = x + dir.dx;
-      ny = y + dir.dy;
-      if (nx < minX || nx > maxX || ny < minY || ny > maxY) continue;
-    }
-    x = nx;
-    y = ny;
-    path.push({ x, y });
-  }
-
-  return path;
-}
-
-/**
- * Try to stamp one room centered on `center`: random size from
- * config.minRoomSize/maxRoomSize, shrunk + clamped to stay inside `bounds`.
- * Returns the Room when it fits in bounds and avoids overlaps, else null.
+ * Try to place one room in a bounded grid slot. The slot is the important
+ * difference from the old random-walk approach: every requested room gets a
+ * finite set of valid locations instead of depending on a path crossing a
+ * usable point at exactly the right time.
  */
 function tryStampRoom(
   rng: SeededRandom,
-  center: Point,
-  bounds: Rect,
+  slot: Rect,
   config: GameConfig,
   existingRooms: Room[],
   localRooms: Room[],
   id: number,
 ): Room | null {
-  let width = rng.nextInt(config.minRoomSize, config.maxRoomSize);
-  let height = rng.nextInt(config.minRoomSize, config.maxRoomSize);
-
-  // Shrink (rather than fail) so the rect can stay inside small bounds.
-  width = Math.max(1, Math.min(width, bounds.width));
-  height = Math.max(1, Math.min(height, bounds.height));
-
-  const x = Math.max(
-    bounds.x,
-    Math.min(center.x - Math.floor(width / 2), bounds.x + bounds.width - width),
+  const maxWidth = Math.max(config.minRoomSize, slot.width);
+  const maxHeight = Math.max(config.minRoomSize, slot.height);
+  const width = rng.nextInt(
+    config.minRoomSize,
+    Math.min(config.maxRoomSize, maxWidth),
   );
-  const y = Math.max(
-    bounds.y,
-    Math.min(
-      center.y - Math.floor(height / 2),
-      bounds.y + bounds.height - height,
-    ),
+  const height = rng.nextInt(
+    config.minRoomSize,
+    Math.min(config.maxRoomSize, maxHeight),
   );
+  const x = slot.x + rng.nextInt(0, Math.max(0, slot.width - width));
+  const y = slot.y + rng.nextInt(0, Math.max(0, slot.height - height));
 
   const candidate: Rect = { x, y, width, height };
 
-  if (!isWithinBounds(candidate, bounds)) return null;
+  if (!isWithinBounds(candidate, slot)) return null;
   if (existingRooms.some((r) => rectsOverlap(candidate, r.rect, 2))) {
     return null;
   }
@@ -228,7 +126,7 @@ function tryStampRoom(
 }
 
 // ---------------------------------------------------------------------------
-// generateDungeon – digger tunnel-carve + room stamping
+// generateDungeon – bounded grid room placement + graph corridors
 // ---------------------------------------------------------------------------
 
 function generateDungeon(
@@ -240,63 +138,58 @@ function generateDungeon(
 ): Dungeon {
   const empty: Dungeon = { id, rooms: [], bossRoomId: 0, startRoomId: 0 };
 
-  // --- DIG: random-walk tunnel ---------------------------------------------
-  const maxSteps = Math.max(1, config.roomsPerDungeon * DIGGER_STEPS_PER_ROOM);
-  const path = carveDiggerPath(rng, bounds, maxSteps);
-  if (path.length === 0) return empty;
+  const slotGap = 2;
+  const minRoomSize = Math.max(1, config.minRoomSize);
+  const columns = Math.max(
+    1,
+    Math.floor((bounds.width + slotGap) / (minRoomSize + slotGap)),
+  );
+  const rows = Math.max(
+    1,
+    Math.floor((bounds.height + slotGap) / (minRoomSize + slotGap)),
+  );
+  const slotWidth = Math.floor(
+    (bounds.width - slotGap * (columns - 1)) / columns,
+  );
+  const slotHeight = Math.floor(
+    (bounds.height - slotGap * (rows - 1)) / rows,
+  );
+  if (slotWidth < minRoomSize || slotHeight < minRoomSize) return empty;
 
-  // --- STAMP: start room, shifting forward until one fits -------------------
+  const slots: Rect[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      slots.push({
+        x: bounds.x + column * (slotWidth + slotGap),
+        y: bounds.y + row * (slotHeight + slotGap),
+        width: slotWidth,
+        height: slotHeight,
+      });
+    }
+  }
+
+  // Shuffle slots so the layout stays varied while every room remains bounded.
+  for (let i = slots.length - 1; i > 0; i--) {
+    const swapIndex = rng.nextInt(0, i);
+    [slots[i], slots[swapIndex]] = [slots[swapIndex], slots[i]];
+  }
+
   const rooms: Room[] = [];
-  let lastStamp = -1;
-  for (let i = 0; i < path.length; i++) {
+  for (const slot of slots) {
+    if (rooms.length >= config.roomsPerDungeon) break;
     const room = tryStampRoom(
       rng,
-      path[i],
-      bounds,
+      slot,
       config,
       existingRooms,
       rooms,
       rooms.length,
     );
     if (room) {
-      room.isStart = true;
       rooms.push(room);
-      lastStamp = i;
-      break;
     }
   }
-  if (lastStamp < 0) return empty;
 
-  // --- STAMP: remaining rooms ~STAMP_INTERVAL path steps after the last -----
-  // --- stamped room (cursor-based so rooms spread along the tunnel) --------
-  for (let n = 1; n < config.roomsPerDungeon; n++) {
-    const base = lastStamp + STAMP_INTERVAL;
-    if (base >= path.length) break; // path exhausted
-    const end = Math.min(base + STAMP_LOOKAHEAD, path.length - 1);
-    let stamped = false;
-    for (let i = base; i <= end; i++) {
-      const room = tryStampRoom(
-        rng,
-        path[i],
-        bounds,
-        config,
-        existingRooms,
-        rooms,
-        rooms.length,
-      );
-      if (room) {
-        rooms.push(room);
-        lastStamp = i;
-        stamped = true;
-        break;
-      }
-    }
-    // On failure we give up on that room slot and continue from the end of
-    // its window (keeps the dungeon smaller rather than looping forever).
-    if (!stamped) lastStamp = end;
-  }
-
-  // Engine reports "No space" unless at least 2 rooms were stamped.
   if (rooms.length < 2) return empty;
 
   // Mark exactly one start (first) and one boss (last), wire the chain.
