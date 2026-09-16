@@ -1,5 +1,10 @@
 // Game Configuration Types
 export interface GameConfig {
+  // Random seed for deterministic world generation.
+  // When undefined (e.g. configs saved before seeds existed), generators
+  // must fall back to Date.now().
+  seed: number;
+
   // Map settings (in tiles)
   mapWidth: number;
   mapHeight: number;
@@ -70,6 +75,7 @@ export enum TileType {
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
+  seed: 1337,
   mapWidth: 100,
   mapHeight: 80,
   tilePixelSize: 16,
