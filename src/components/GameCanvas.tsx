@@ -20,6 +20,11 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<GameEngine | null>(null);
     const [isClient, setIsClient] = useState(false);
+    // Mirror latest config without re-running the init effect.
+    // The init effect (deps [isClient]) reads configRef.current once so the
+    // engine is constructed with the freshest initial config.
+    const configRef = useRef<GameConfig>(config);
+    configRef.current = config;
 
     useEffect(() => {
       setIsClient(true);
@@ -32,8 +37,10 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
 
       const initGame = async () => {
         try {
-          // Create engine with current config
-          const engine = new GameEngine(config);
+          // Create engine once with the initial config snapshot.
+          // Subsequent config changes go through updateConfig (see below)
+          // so the Pixi Application / WebGL context is never re-created.
+          const engine = new GameEngine(configRef.current);
           
           // Initialize
           await engine.init(canvasRef.current!);
@@ -57,7 +64,13 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
           engineRef.current = null;
         }
       };
-    }, [isClient, config]);
+    }, [isClient]);
+
+    // Live config updates without tearing down the WebGL context.
+    // Skipped until the engine has finished init (guard null).
+    useEffect(() => {
+      engineRef.current?.updateConfig(config);
+    }, [config]);
 
     useImperativeHandle(ref, () => ({
       regenerate: () => {

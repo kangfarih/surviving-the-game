@@ -38,14 +38,14 @@
 | 1 | Fire Splash | fire, projectile, short, burst | ~120%x1 spl, CD6, 14MP | R#2; 11v; Lv1-40; WoW: Mage:FireBlast/Scorch, Lk:SearingPain/SoulFire |
 | 2 | Fire Field | fire, ground, short, dot, burn | ~50%/t 8s, CD12, 14MP | R#3; 8v; Lv2-48; WoW: Mage:Flamestrike, Hunter:Immolation, Sh:FireNova, Lk:RainFire |
 | 5 | Ignite | fire, instant, short, dot, burn | ~40%/t 6s, CD8 + burn | R#5; 6v; Lv5-35; WoW: Lk:Corruption/Agony, Pr:SW:Pain, Dr:Moonfire, Hunter:Serpent |
-| 16 | Meteor | fire, ground, long, burst | ~120%x5, CD25, 30MP | R#4; 9v; Lv16-49; WoW: Mage:Blizzard, Dr:Starfire/Hurricane, Sh:ChainLightning |
+| 16 | Meteor | fire, ground, long, burst | ~120%x5, CD25, 30MP | R#4; 9v; Lv16-49; WoW: Mage:Blizzard, Dr:Starfire/Hurricane |
 
 ### Storm
 
 | Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Lightning Bolt | storm, projectile, long, burst, shock | ~150%x1, CD4 + shk | R#10; 8v; Lv1-34; WoW: Sh:LightningBolt/Chain, Dr:Wrath |
-| 3 | Storm Field | storm, ground, long, burst, shock | ~110%x3 bnc, CD12 + shk | R#11; 7v; Lv3-50; WoW: Hunter:Volley/Multi, Sh:FireNova, Mage:ArcaneExplosion |
+| 1 | Lightning Bolt | storm, projectile, long, burst, shock | ~150%x1, CD4 + shk | R#10; 8v; Lv1-34; WoW: Sh:LightningBolt, Dr:Wrath |
+| 3 | Storm Field | storm, ground, long, burst, shock | ~110%x3 bnc, CD12 + shk | R#11; 7v; Lv3-50; WoW: Hunter:Volley/Multi, Sh:FireNova/ChainLightning, Mage:ArcaneExplosion |
 
 ### Shadow
 

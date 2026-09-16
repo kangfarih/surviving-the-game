@@ -9,7 +9,7 @@ import { GameConfig, DEFAULT_CONFIG } from '@/game/types';
 export default function Home() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [config, setConfig] = useState<GameConfig>(DEFAULT_CONFIG);
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
   const gameCanvasRef = useRef<GameCanvasRef>(null);
 
   const handleGenerate = () => {
@@ -27,8 +27,6 @@ export default function Home() {
       {/* Top Menu */}
       <TopMenu
         onConfigClick={() => setIsConfigOpen(true)}
-        showGrid={showGrid}
-        onToggleGrid={() => setShowGrid((prev) => !prev)}
       />
       
       {/* Game Canvas - Full remaining height */}
@@ -43,6 +41,8 @@ export default function Home() {
         onConfigChange={handleConfigChange}
         onClose={() => setIsConfigOpen(false)}
         onGenerate={handleGenerate}
+        showGrid={showGrid}
+        onToggleGrid={() => setShowGrid((prev) => !prev)}
       />
     </div>
   );

@@ -9,6 +9,8 @@ interface ConfigPanelProps {
   onConfigChange: (config: GameConfig) => void;
   onClose: () => void;
   onGenerate: () => void;
+  showGrid: boolean;
+  onToggleGrid: () => void;
 }
 
 type NumericFieldKey =
@@ -54,6 +56,8 @@ export function ConfigPanel({
   onConfigChange,
   onClose,
   onGenerate,
+  showGrid,
+  onToggleGrid,
 }: ConfigPanelProps) {
   const [drafts, setDrafts] = useState<Record<NumericFieldKey, string>>(() =>
     draftsFromConfig(config),
@@ -171,6 +175,18 @@ export function ConfigPanel({
               {renderNumberRow('mapWidth', 'Map Width (tiles)')}
               {renderNumberRow('mapHeight', 'Map Height (tiles)')}
               {renderNumberRow('tilePixelSize', 'Tile Pixel Size (px)')}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="showGrid"
+                  checked={showGrid}
+                  onChange={onToggleGrid}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="showGrid" className="text-sm text-gray-300">
+                  Show Grid
+                </label>
+              </div>
             </div>
           </section>
 

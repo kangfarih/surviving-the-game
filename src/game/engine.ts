@@ -22,7 +22,7 @@ export class GameEngine {
   private app: PIXI.Application | null = null;
   private tileGraphics: PIXI.Graphics | null = null;
   private gridGraphics: PIXI.Graphics | null = null;
-  private showGrid = true;
+  private showGrid = false;
   private container: PIXI.Container | null = null;
   private config: GameConfig;
   private tileMap: TileMap | null = null;
