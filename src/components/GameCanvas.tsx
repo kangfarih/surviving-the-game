@@ -13,6 +13,8 @@ interface GameCanvasProps {
 
 export interface GameCanvasRef {
   regenerate: () => void;
+  addDungeon: () => boolean;
+  removeDungeon: () => boolean;
   updateConfig: (config: GameConfig) => void;
   setShowGrid: (show: boolean) => void;
   getWorldData: () => WorldData | null;
@@ -105,6 +107,20 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
           engine.generate();
           reportStats(engine);
         }
+      },
+      addDungeon: () => {
+        const engine = engineRef.current;
+        if (!engine) return false;
+        const result = engine.addDungeon();
+        reportStats(engine);
+        return result;
+      },
+      removeDungeon: () => {
+        const engine = engineRef.current;
+        if (!engine) return false;
+        const result = engine.removeDungeon();
+        reportStats(engine);
+        return result;
       },
       updateConfig: (newConfig: GameConfig) => {
         if (engineRef.current) {

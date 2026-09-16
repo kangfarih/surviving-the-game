@@ -21,12 +21,10 @@ import {
 // - Each slot is BSP-split into leaves (both children always >= minLeafSize),
 //   shrunk by a 1-tile wall border into rooms, ordered entrance -> ... ->
 //   boss via nearest-neighbor, with the largest room forced last as the boss.
-// - Two deliberate deviations from the prototype:
-//   1. Corridor L-bend orientation is a deterministic hash of the endpoints
-//      (not an RNG coin flip) so `renderWorld(config, savedDungeons)` — used
-//      by save/load and the tile API — reproduces identical corridors.
-//   2. City buildings use a dedicated RNG stream (`seed ^ CITY_SALT`) so city
-//      layout is stable regardless of dungeon packing order.
+// - One deliberate deviation from the prototype: corridor L-bend orientation
+//   is a deterministic hash of the endpoints (not an RNG coin flip) so
+//   `renderWorld(config, savedDungeons)` — used by save/load and the tile
+//   API — reproduces identical corridors.
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
@@ -72,11 +70,6 @@ export class SeededRandom {
 /** Factory for a persistent RNG instance. */
 export function createRng(seed: number = Date.now()): SeededRandom {
   return new SeededRandom(seed);
-}
-
-/** Salted stream so city layout doesn't depend on dungeon packing order. */
-function createCityRng(seed: number): SeededRandom {
-  return new SeededRandom((seed ^ 0x9e3779b9) >>> 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -414,44 +407,11 @@ function fillRoom(room: Room, tiles: TileType[][], tileType: TileType): void {
   }
 }
 
-function carveCityBuildings(
-  tiles: TileType[][],
-  cityRect: Rect,
-  rng: SeededRandom,
-): void {
-  const buildingBudget = Math.max(1, Math.floor((cityRect.width * cityRect.height) / 22));
-  let placed = 0;
-  let tries = 0;
-  while (placed < buildingBudget && tries < buildingBudget * 12) {
-    tries++;
-    const bw = rng.nextInt(2, 4);
-    const bh = rng.nextInt(2, 4);
-    const bx = cityRect.x + 1 + rng.nextInt(0, Math.max(0, cityRect.width - bw - 2));
-    const by = cityRect.y + 1 + rng.nextInt(0, Math.max(0, cityRect.height - bh - 2));
-    let clear = true;
-    for (let y = by - 1; y <= by + bh && clear; y++) {
-      for (let x = bx - 1; x <= bx + bw; x++) {
-        if (!tiles[y] || tiles[y][x] !== TileType.CITY_FLOOR) {
-          clear = false;
-          break;
-        }
-      }
-    }
-    if (!clear) continue;
-    for (let y = by; y < by + bh; y++) {
-      for (let x = bx; x < bx + bw; x++) {
-        tiles[y][x] = TileType.CITY_WALL;
-      }
-    }
-    placed++;
-  }
-}
-
 /**
- * Build a tile map from an explicit dungeon list. Draws the city (when
- * enabled) then every dungeon's rooms (START/FLOOR/BOSS) plus 1-wide
- * L-corridors along each `connected` link. Deterministic from seed + rooms,
- * so saved worlds and `?tiles=1` API renders match the live canvas.
+ * Build a tile map from an explicit dungeon list. Draws the city floor (when
+ * enabled, no buildings) then every dungeon's rooms (START/FLOOR/BOSS) plus
+ * 1-wide L-corridors along each `connected` link. Deterministic from seed +
+ * rooms, so saved worlds and `?tiles=1` API renders match the live canvas.
  */
 export function renderWorld(config: GameConfig, dungeons: Dungeon[]): TileMap {
   const gridWidth = Math.max(8, Math.floor(config.mapWidth));
@@ -462,7 +422,7 @@ export function renderWorld(config: GameConfig, dungeons: Dungeon[]): TileMap {
     .fill(null)
     .map(() => Array(gridWidth).fill(TileType.WALL));
 
-  // City (optional, centered)
+  // City (optional, centered): open floor, no buildings.
   const cityRect = getCityRect(config);
   if (cityRect) {
     for (let y = cityRect.y; y < cityRect.y + cityRect.height; y++) {
@@ -472,7 +432,6 @@ export function renderWorld(config: GameConfig, dungeons: Dungeon[]): TileMap {
         }
       }
     }
-    carveCityBuildings(tiles, cityRect, createCityRng(config.seed ?? Date.now()));
   }
 
   for (const dungeon of dungeons) {

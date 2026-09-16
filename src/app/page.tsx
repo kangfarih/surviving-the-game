@@ -10,6 +10,7 @@ export default function Home() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [config, setConfig] = useState<GameConfig>(DEFAULT_CONFIG);
   const [showGrid] = useState(false);
+  const [dungeonCount, setDungeonCount] = useState(0);
   const [boot, setBoot] = useState<{ done: boolean; world: WorldData | null }>({
     done: false,
     world: null,
@@ -56,6 +57,7 @@ export default function Home() {
         if (cancelled) return;
         if (world) {
           setConfig({ ...world.config });
+          setDungeonCount(world.dungeons.length);
           setBoot({ done: true, world });
         } else {
           setBoot({ done: true, world: null });
@@ -83,6 +85,21 @@ export default function Home() {
   const handleLoadWorld = (data: WorldData) => {
     gameCanvasRef.current?.loadWorldData(data);
     setConfig({ ...data.config });
+    setDungeonCount(data.dungeons.length);
+  };
+
+  const handleGenerateDungeon = () => {
+    const result = gameCanvasRef.current?.addDungeon() ?? false;
+    const data = gameCanvasRef.current?.getWorldData() ?? null;
+    if (data) setDungeonCount(data.dungeons.length);
+    return result;
+  };
+
+  const handleDeleteDungeon = () => {
+    const result = gameCanvasRef.current?.removeDungeon() ?? false;
+    const data = gameCanvasRef.current?.getWorldData() ?? null;
+    if (data) setDungeonCount(data.dungeons.length);
+    return result;
   };
 
   return (
@@ -105,6 +122,7 @@ export default function Home() {
             config={config}
             showGrid={showGrid}
             initialWorldData={boot.world}
+            onStats={(dungeons) => setDungeonCount(dungeons)}
           />
         )}
       </div>
@@ -117,6 +135,9 @@ export default function Home() {
         onClose={() => setIsConfigOpen(false)}
         getWorldData={getWorldData}
         onLoadWorld={handleLoadWorld}
+        onGenerateDungeon={handleGenerateDungeon}
+        onDeleteDungeon={handleDeleteDungeon}
+        dungeonCount={dungeonCount}
       />
     </div>
   );

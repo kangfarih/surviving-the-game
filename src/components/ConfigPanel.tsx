@@ -10,6 +10,9 @@ interface ConfigPanelProps {
   onClose: () => void;
   getWorldData: () => WorldData | null;
   onLoadWorld: (data: WorldData) => void;
+  onGenerateDungeon: () => boolean;
+  onDeleteDungeon: () => boolean;
+  dungeonCount: number;
 }
 
 interface SavedWorldSummary {
@@ -37,6 +40,9 @@ export function ConfigPanel({
   onClose,
   getWorldData,
   onLoadWorld,
+  onGenerateDungeon,
+  onDeleteDungeon,
+  dungeonCount,
 }: ConfigPanelProps) {
   const [drafts, setDrafts] = useState<Record<NumericFieldKey, string>>(() =>
     draftsFromConfig(config),
@@ -46,6 +52,7 @@ export function ConfigPanel({
   const [savedWorlds, setSavedWorlds] = useState<SavedWorldSummary[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [dungeonMsg, setDungeonMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Sync local drafts when the config prop changes (e.g. Reset to Default).
@@ -103,6 +110,7 @@ export function ConfigPanel({
 
   const handleClose = () => {
     setSaveMsg(null);
+    setDungeonMsg(null);
     onClose();
   };
 
@@ -114,6 +122,20 @@ export function ConfigPanel({
     const seed =
       Math.floor(Math.random() * (FIELD_BOUNDS.seed.max - 1)) + 1;
     onConfigChange({ ...config, seed });
+  };
+
+  const handleGenerateDungeon = () => {
+    const ok = onGenerateDungeon();
+    setDungeonMsg(
+      ok
+        ? null
+        : 'All planned dungeons are already placed — change the seed for a new layout.',
+    );
+  };
+
+  const handleDeleteDungeon = () => {
+    const ok = onDeleteDungeon();
+    setDungeonMsg(ok ? null : 'No dungeons to remove.');
   };
 
   const handleSave = async () => {
@@ -295,6 +317,34 @@ export function ConfigPanel({
               <p className="text-xs text-gray-500">
                 Same seed + settings always yields the same map.
               </p>
+            </div>
+          </section>
+
+          {/* Dungeons */}
+          <section>
+            <h3 className="text-lg font-semibold text-amber-200 mb-3">Dungeons</h3>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-300">
+                Dungeons on map:{' '}
+                <span className="text-amber-100">{dungeonCount}</span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleGenerateDungeon}
+                  className="flex-1 px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors"
+                >
+                  Generate Dungeon
+                </button>
+                <button
+                  onClick={handleDeleteDungeon}
+                  className="flex-1 px-4 py-2 bg-orange-900/60 hover:bg-orange-800/60 text-orange-100 rounded border border-orange-700/50 transition-colors"
+                >
+                  Delete Dungeon
+                </button>
+              </div>
+              {dungeonMsg && (
+                <p className="text-sm text-red-300">{dungeonMsg}</p>
+              )}
             </div>
           </section>
 

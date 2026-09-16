@@ -11,10 +11,10 @@ The core idea is simple: **teleport an agent in, give it the same rules as every
 Playable world viewer (no combat yet):
 
 - Procedural `TileMap` generation: full-fill map (no void tiles) — optional
-  centered city with buildings, regions strip-packed with dungeons, BSP rooms
+  centered city (open floor), regions strip-packed with dungeons, BSP rooms
   per dungeon, entrance → … → largest-room-as-boss chains + corridors
 - PixiJS 7 canvas renderer: pan (drag), zoom (wheel / double-click), centered + resize-aware
-- Config panel: seed (+ randomize) and Save / Load; all map/city/dungeon sizes are fixed in `DEFAULT_CONFIG`
+- Config panel: seed (+ randomize), manual Generate / Delete Dungeon buttons, and Save / Load; all map/city/dungeon sizes are fixed in `DEFAULT_CONFIG`
 - Classless stats / skills / combat design docs under `docs/` (brainstorm, not implemented)
 
 ## Vision
@@ -70,7 +70,7 @@ npm run lint
 | `mapWidth / mapHeight` | 384 × 216 | world size in tiles |
 | `tilePixelSize` | 16 | px per tile |
 | `seed` | 1337 | deterministic seed (same seed + settings = same map) |
-| `includeCity / cityWidth / cityHeight` | true / 128 / 72 | centered city with buildings |
+| `includeCity / cityWidth / cityHeight` | true / 128 / 72 | centered open-floor city |
 | `minRoomSize` | 7 | smallest playable room floor, in tiles |
 | `minRoomsPerDungeon / maxRoomsPerDungeon` | 4 / 7 | rooms per dungeon, incl. boss (largest room) |
 

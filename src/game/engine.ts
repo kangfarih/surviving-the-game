@@ -26,7 +26,10 @@ export class GameEngine {
   private container: PIXI.Container | null = null;
   private config: GameConfig;
   private tileMap: TileMap | null = null;
-  private dungeons: Dungeon[] = [];
+  // Full deterministic plan for the current seed + config. Only the first
+  // `visibleCount` entries are placed on the map — nothing is auto-placed.
+  private planned: Dungeon[] = [];
+  private visibleCount = 0;
   private isDragging: boolean = false;
   private lastMousePos: { x: number; y: number } = { x: 0, y: 0 };
   private offset: { x: number; y: number } = { x: 0, y: 0 };
@@ -149,16 +152,19 @@ export class GameEngine {
     this.applyCoverView();
   };
 
-  /** Full regenerate: plan all dungeons from seed + config, then draw. */
+  /**
+   * Re-plan from seed + config and reset to an empty map (city + solid rock).
+   * Dungeons are only placed via addDungeon() — nothing auto-generates.
+   */
   generate(): void {
-    // Deterministic full-fill: same seed + config always yields the same world.
-    this.dungeons = generateWorldDungeons(this.config);
+    this.planned = generateWorldDungeons(this.config);
+    this.visibleCount = 0;
     this.redraw();
   }
 
   /** Re-render the explicit world state (city + current dungeons). */
   private redraw(): void {
-    this.tileMap = renderWorld(this.config, this.dungeons);
+    this.tileMap = renderWorld(this.config, this.planned.slice(0, this.visibleCount));
 
     if (!this.app) return;
 
@@ -437,14 +443,37 @@ export class GameEngine {
   updateConfig(config: GameConfig): void {
     this.config = config;
     // Existing dungeons can't survive a config change: room footprints depend
-    // on map/city/room settings, so plan everything fresh (same seed = same map).
+    // on map/city/room settings, so re-plan fresh and reset to empty
+    // (same seed + config = same plan).
     this.generate();
+  }
+
+  /**
+   * Place the next planned dungeon (deterministic packing order).
+   * Returns false when every planned dungeon is already placed.
+   */
+  addDungeon(): boolean {
+    if (this.visibleCount >= this.planned.length) return false;
+    this.visibleCount++;
+    this.redraw();
+    return true;
+  }
+
+  /**
+   * Remove the most recently placed dungeon (LIFO, keeps the visible prefix).
+   * Returns false when the map has no dungeons.
+   */
+  removeDungeon(): boolean {
+    if (this.visibleCount <= 0) return false;
+    this.visibleCount--;
+    this.redraw();
+    return true;
   }
 
   getWorldData(): WorldData {
     return {
       config: { ...this.config },
-      dungeons: this.dungeons.map((d) => ({
+      dungeons: this.planned.slice(0, this.visibleCount).map((d) => ({
         ...d,
         rooms: d.rooms.map((r) => ({
           ...r,
@@ -457,7 +486,8 @@ export class GameEngine {
 
   loadWorldData(data: WorldData): void {
     this.config = { ...data.config };
-    this.dungeons = data.dungeons.map((d) => ({
+    const planned = generateWorldDungeons(this.config);
+    const saved = data.dungeons.map((d) => ({
       ...d,
       rooms: d.rooms.map((r) => ({
         ...r,
@@ -465,6 +495,19 @@ export class GameEngine {
         connected: [...r.connected],
       })),
     }));
+    if (
+      saved.length <= planned.length &&
+      saved.every((d, i) => JSON.stringify(d) === JSON.stringify(planned[i]))
+    ) {
+      // Prefix restore: saved dungeons match the deterministic plan prefix,
+      // so further addDungeon() calls continue the deterministic order.
+      this.planned = planned;
+      this.visibleCount = saved.length;
+    } else {
+      // Legacy gen-v1 saves: fall back to the saved dungeons as the plan.
+      this.planned = saved;
+      this.visibleCount = saved.length;
+    }
     this.redraw();
   }
 
