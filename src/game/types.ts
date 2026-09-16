@@ -94,6 +94,6 @@ export const DEFAULT_CONFIG: GameConfig = {
   cityWidth: 50,
   cityHeight: 30,
   minRoomSize: 15,
-  minRoomsPerDungeon: 5,
+  minRoomsPerDungeon: 7,
   maxRoomsPerDungeon: 10,
 };
