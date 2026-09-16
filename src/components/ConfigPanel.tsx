@@ -35,15 +35,15 @@ type NumericFieldKey =
   | 'corridorWidth';
 
 const FIELD_BOUNDS: Record<NumericFieldKey, { min: number; max: number }> = {
-  mapWidth: { min: 50, max: 200 },
-  mapHeight: { min: 50, max: 200 },
+  mapWidth: { min: 50, max: 400 },
+  mapHeight: { min: 50, max: 400 },
   tilePixelSize: { min: 8, max: 32 },
-  cityWidth: { min: 10, max: 40 },
-  cityHeight: { min: 10, max: 40 },
+  cityWidth: { min: 10, max: 200 },
+  cityHeight: { min: 10, max: 200 },
   roomsPerDungeon: { min: 3, max: 15 },
-  minRoomSize: { min: 3, max: 8 },
-  maxRoomSize: { min: 8, max: 20 },
-  corridorWidth: { min: 1, max: 4 },
+  minRoomSize: { min: 5, max: 64 },
+  maxRoomSize: { min: 10, max: 128 },
+  corridorWidth: { min: 1, max: 6 },
 };
 
 function draftsFromConfig(config: GameConfig): Record<NumericFieldKey, string> {

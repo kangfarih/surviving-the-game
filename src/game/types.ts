@@ -81,14 +81,14 @@ export enum TileType {
 
 export const DEFAULT_CONFIG: GameConfig = {
   seed: 1337,
-  mapWidth: 100,
-  mapHeight: 80,
+  mapWidth: 384,
+  mapHeight: 216,
   tilePixelSize: 16,
   includeCity: true,
-  cityWidth: 20,
-  cityHeight: 20,
+  cityWidth: 128,
+  cityHeight: 72,
   roomsPerDungeon: 5,
-  minRoomSize: 5,
-  maxRoomSize: 10,
+  minRoomSize: 18,
+  maxRoomSize: 32,
   corridorWidth: 2,
 };

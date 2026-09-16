@@ -94,27 +94,45 @@ export function getCityRect(config: GameConfig): Rect | null {
 function tryStampRoom(
   rng: SeededRandom,
   slot: Rect,
+  bounds: Rect,
   config: GameConfig,
   existingRooms: Room[],
   localRooms: Room[],
   id: number,
+  isBoss: boolean = false,
 ): Room | null {
-  const maxWidth = Math.max(config.minRoomSize, slot.width);
-  const maxHeight = Math.max(config.minRoomSize, slot.height);
-  const width = rng.nextInt(
-    config.minRoomSize,
-    Math.min(config.maxRoomSize, maxWidth),
+  // Boss rooms get 2x size multiplier, but capped to dungeon bounds
+  const sizeMultiplier = isBoss ? 2.0 : 1.0;
+  const effectiveMin = Math.max(config.minRoomSize, 5);
+  const effectiveMax = Math.min(
+    Math.floor(config.maxRoomSize * sizeMultiplier),
+    bounds.width,
+    bounds.height,
   );
-  const height = rng.nextInt(
-    config.minRoomSize,
-    Math.min(config.maxRoomSize, maxHeight),
+
+  if (effectiveMin > effectiveMax) return null;
+
+  const width = rng.nextInt(effectiveMin, effectiveMax);
+  const height = rng.nextInt(effectiveMin, effectiveMax);
+
+  // Position: center the room randomly within the slot, but clamp to bounds
+  const maxX = bounds.x + bounds.width - width;
+  const maxY = bounds.y + bounds.height - height;
+  const x = rng.nextInt(
+    Math.max(bounds.x, slot.x - Math.floor(width / 3)),
+    Math.min(maxX, slot.x + slot.width),
   );
-  const x = slot.x + rng.nextInt(0, Math.max(0, slot.width - width));
-  const y = slot.y + rng.nextInt(0, Math.max(0, slot.height - height));
+  const y = rng.nextInt(
+    Math.max(bounds.y, slot.y - Math.floor(height / 3)),
+    Math.min(maxY, slot.y + slot.height),
+  );
 
   const candidate: Rect = { x, y, width, height };
 
-  if (!isWithinBounds(candidate, slot)) return null;
+  // Must fit within dungeon bounds
+  if (!isWithinBounds(candidate, bounds)) return null;
+
+  // Must not overlap existing rooms (cross-dungeon: 2 tile gap, intra: 1 tile)
   if (existingRooms.some((r) => rectsOverlap(candidate, r.rect, 2))) {
     return null;
   }
@@ -177,13 +195,16 @@ function generateDungeon(
   const rooms: Room[] = [];
   for (const slot of slots) {
     if (rooms.length >= config.roomsPerDungeon) break;
+    const isLastSlot = rooms.length === config.roomsPerDungeon - 1;
     const room = tryStampRoom(
       rng,
       slot,
+      bounds,
       config,
       existingRooms,
       rooms,
       rooms.length,
+      isLastSlot, // boss room gets size multiplier
     );
     if (room) {
       rooms.push(room);
@@ -223,7 +244,7 @@ function boundsForAngle(config: GameConfig, angle: number): Rect {
   const gridWidth = config.mapWidth;
   const gridHeight = config.mapHeight;
   const minDim = Math.min(gridWidth, gridHeight);
-  const dungeonAreaSize = Math.floor(minDim * 0.35);
+  const dungeonAreaSize = Math.floor(minDim * 0.45);
   const circleRadius = Math.floor(minDim * 0.4);
 
   const centerX = Math.floor(gridWidth / 2 + Math.cos(angle) * circleRadius);
