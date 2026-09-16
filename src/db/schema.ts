@@ -3,7 +3,7 @@ import type { Dungeon, GameConfig } from '@/game/types';
 
 // Phase 1 persistence: configs + worlds only. No runs/ticks yet.
 
-export const GENERATOR_VERSION = 'gen-v1';
+export const GENERATOR_VERSION = 'gen-v2';
 
 export const worldConfigs = pgTable('world_configs', {
   id: uuid('id').defaultRandom().primaryKey(),

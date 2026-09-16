@@ -8,20 +8,19 @@ interface GameCanvasProps {
   config: GameConfig;
   showGrid: boolean;
   initialWorldData?: WorldData | null;
+  onStats?: (dungeonCount: number, roomCount: number) => void;
 }
 
 export interface GameCanvasRef {
   regenerate: () => void;
   updateConfig: (config: GameConfig) => void;
   setShowGrid: (show: boolean) => void;
-  addDungeon: () => boolean;
-  removeOldestDungeon: () => boolean;
   getWorldData: () => WorldData | null;
   loadWorldData: (data: WorldData) => void;
 }
 
 export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
-  ({ config, showGrid, initialWorldData }, ref) => {
+  ({ config, showGrid, initialWorldData, onStats }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<GameEngine | null>(null);
     const [isClient, setIsClient] = useState(false);
@@ -30,6 +29,17 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
     // engine is constructed with the freshest initial config.
     const configRef = useRef<GameConfig>(config);
     configRef.current = config;
+    // Mirror latest callback without re-running the init effect.
+    const onStatsRef = useRef(onStats);
+    onStatsRef.current = onStats;
+
+    const reportStats = (engine: GameEngine) => {
+      const data = engine.getWorldData();
+      onStatsRef.current?.(
+        data.dungeons.length,
+        data.dungeons.reduce((n, d) => n + d.rooms.length, 0),
+      );
+    };
     // Boot payload from Neon (most recently saved world). Read once at init.
     const initialWorldRef = useRef<WorldData | null>(initialWorldData ?? null);
     initialWorldRef.current = initialWorldData ?? null;
@@ -59,6 +69,7 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
             if (bootWorld && Array.isArray(bootWorld.dungeons) && bootWorld.dungeons.length > 0) {
               engine.loadWorldData(bootWorld);
             }
+            reportStats(engine);
           } else {
             engine.destroy();
           }
@@ -81,13 +92,18 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
     // Live config updates without tearing down the WebGL context.
     // Skipped until the engine has finished init (guard null).
     useEffect(() => {
-      engineRef.current?.updateConfig(config);
+      const engine = engineRef.current;
+      if (!engine) return;
+      engine.updateConfig(config);
+      reportStats(engine);
     }, [config]);
 
     useImperativeHandle(ref, () => ({
       regenerate: () => {
-        if (engineRef.current) {
-          engineRef.current.generate();
+        const engine = engineRef.current;
+        if (engine) {
+          engine.generate();
+          reportStats(engine);
         }
       },
       updateConfig: (newConfig: GameConfig) => {
@@ -97,12 +113,6 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
       },
       setShowGrid: (show: boolean) => {
         engineRef.current?.setShowGrid(show);
-      },
-      addDungeon: () => {
-        return engineRef.current?.addDungeon() ?? false;
-      },
-      removeOldestDungeon: () => {
-        return engineRef.current?.removeOldestDungeon() ?? false;
       },
       getWorldData: () => {
         return engineRef.current?.getWorldData() ?? null;

@@ -8,11 +8,11 @@ interface ConfigPanelProps {
   config: GameConfig;
   onConfigChange: (config: GameConfig) => void;
   onClose: () => void;
-  onGenerate: () => boolean;
-  onDeleteDungeon: () => boolean;
+  onRegenerate: () => void;
   showGrid: boolean;
   onToggleGrid: () => void;
   dungeonCount: number;
+  roomCount: number;
   getWorldData: () => WorldData | null;
   onLoadWorld: (data: WorldData) => void;
 }
@@ -27,23 +27,23 @@ type NumericFieldKey =
   | 'mapWidth'
   | 'mapHeight'
   | 'tilePixelSize'
+  | 'seed'
   | 'cityWidth'
   | 'cityHeight'
-  | 'roomsPerDungeon'
   | 'minRoomSize'
-  | 'maxRoomSize'
-  | 'corridorWidth';
+  | 'minRoomsPerDungeon'
+  | 'maxRoomsPerDungeon';
 
 const FIELD_BOUNDS: Record<NumericFieldKey, { min: number; max: number }> = {
-  mapWidth: { min: 50, max: 400 },
-  mapHeight: { min: 50, max: 400 },
+  mapWidth: { min: 24, max: 400 },
+  mapHeight: { min: 24, max: 400 },
   tilePixelSize: { min: 8, max: 32 },
-  cityWidth: { min: 10, max: 200 },
-  cityHeight: { min: 10, max: 200 },
-  roomsPerDungeon: { min: 3, max: 15 },
-  minRoomSize: { min: 5, max: 64 },
-  maxRoomSize: { min: 10, max: 128 },
-  corridorWidth: { min: 1, max: 6 },
+  seed: { min: 1, max: 2147483647 },
+  cityWidth: { min: 4, max: 200 },
+  cityHeight: { min: 4, max: 200 },
+  minRoomSize: { min: 3, max: 30 },
+  minRoomsPerDungeon: { min: 2, max: 20 },
+  maxRoomsPerDungeon: { min: 2, max: 25 },
 };
 
 function draftsFromConfig(config: GameConfig): Record<NumericFieldKey, string> {
@@ -51,12 +51,12 @@ function draftsFromConfig(config: GameConfig): Record<NumericFieldKey, string> {
     mapWidth: String(config.mapWidth),
     mapHeight: String(config.mapHeight),
     tilePixelSize: String(config.tilePixelSize),
+    seed: String(config.seed),
     cityWidth: String(config.cityWidth),
     cityHeight: String(config.cityHeight),
-    roomsPerDungeon: String(config.roomsPerDungeon),
     minRoomSize: String(config.minRoomSize),
-    maxRoomSize: String(config.maxRoomSize),
-    corridorWidth: String(config.corridorWidth),
+    minRoomsPerDungeon: String(config.minRoomsPerDungeon),
+    maxRoomsPerDungeon: String(config.maxRoomsPerDungeon),
   };
 }
 
@@ -65,11 +65,11 @@ export function ConfigPanel({
   config,
   onConfigChange,
   onClose,
-  onGenerate,
-  onDeleteDungeon,
+  onRegenerate,
   showGrid,
   onToggleGrid,
   dungeonCount,
+  roomCount,
   getWorldData,
   onLoadWorld,
 }: ConfigPanelProps) {
@@ -77,7 +77,6 @@ export function ConfigPanel({
     draftsFromConfig(config),
   );
   const [prevConfig, setPrevConfig] = useState(config);
-  const [dungeonMsg, setDungeonMsg] = useState<string | null>(null);
   const [worldName, setWorldName] = useState('');
   const [savedWorlds, setSavedWorlds] = useState<SavedWorldSummary[]>([]);
   const [selectedId, setSelectedId] = useState('');
@@ -138,7 +137,6 @@ export function ConfigPanel({
   if (!isOpen) return null;
 
   const handleClose = () => {
-    setDungeonMsg(null);
     setSaveMsg(null);
     onClose();
   };
@@ -151,16 +149,10 @@ export function ConfigPanel({
     onConfigChange(DEFAULT_CONFIG);
   };
 
-  const handleGenerateDungeon = () => {
-    const ok = onGenerate();
-    setDungeonMsg(
-      ok ? null : 'No space left on the map — delete a dungeon first.',
-    );
-  };
-
-  const handleDeleteDungeon = () => {
-    const ok = onDeleteDungeon();
-    setDungeonMsg(ok ? null : 'No dungeons to delete.');
+  const handleRandomizeSeed = () => {
+    const seed =
+      Math.floor(Math.random() * (FIELD_BOUNDS.seed.max - 1)) + 1;
+    onConfigChange({ ...config, seed });
   };
 
   const handleSave = async () => {
@@ -264,12 +256,22 @@ export function ConfigPanel({
       return;
     }
     const { min, max } = FIELD_BOUNDS[key];
-    let clamped = Math.min(max, Math.max(min, parsed));
-    // Guard minRoomSize <= maxRoomSize.
-    if (key === 'minRoomSize') {
-      clamped = Math.min(clamped, config.maxRoomSize);
-    } else if (key === 'maxRoomSize') {
-      clamped = Math.max(clamped, config.minRoomSize);
+    const clamped = Math.min(max, Math.max(min, parsed));
+    // Guard room-count and room-size ranges.
+    if (key === 'minRoomsPerDungeon') {
+      const fixed = Math.min(clamped, config.maxRoomsPerDungeon);
+      setDrafts((prev) => ({ ...prev, [key]: String(fixed) }));
+      if (fixed !== config[key]) {
+        onConfigChange({ ...config, [key]: fixed });
+      }
+      return;
+    } else if (key === 'maxRoomsPerDungeon') {
+      const fixed = Math.max(clamped, config.minRoomsPerDungeon);
+      setDrafts((prev) => ({ ...prev, [key]: String(fixed) }));
+      if (fixed !== config[key]) {
+        onConfigChange({ ...config, [key]: fixed });
+      }
+      return;
     }
     setDrafts((prev) => ({ ...prev, [key]: String(clamped) }));
     if (clamped !== config[key]) {
@@ -336,10 +338,23 @@ export function ConfigPanel({
             <h3 className="text-lg font-semibold text-amber-200 mb-3">Map Settings</h3>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                {renderNumberRow('mapWidth', 'Map Width')}
-                {renderNumberRow('mapHeight', 'Map Height')}
+                {renderNumberRow('mapWidth', 'Map Width (tiles)')}
+                {renderNumberRow('mapHeight', 'Map Height (tiles)')}
                 {renderNumberRow('tilePixelSize', 'Tile Size (px)')}
               </div>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">{renderNumberRow('seed', 'Seed')}</div>
+                <button
+                  onClick={handleRandomizeSeed}
+                  title="Randomize seed"
+                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded border border-gray-600 transition-colors"
+                >
+                  🎲
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                Same seed + settings always yields the same map.
+              </p>
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -385,44 +400,48 @@ export function ConfigPanel({
             <h3 className="text-lg font-semibold text-amber-200 mb-3">Dungeon Settings</h3>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                {renderNumberRow('roomsPerDungeon', 'Rooms per Dungeon')}
                 {renderNumberRow('minRoomSize', 'Min Room Size')}
-                {renderNumberRow('maxRoomSize', 'Max Room Size')}
-                {renderNumberRow('corridorWidth', 'Corridor Width')}
+                {renderNumberRow('minRoomsPerDungeon', 'Min Rooms')}
+                {renderNumberRow('maxRoomsPerDungeon', 'Max Rooms (incl. boss)')}
               </div>
+              <p className="text-xs text-gray-500">
+                Min room size is the smallest playable floor — room for the
+                party plus monsters to move and fight. No fixed dungeon count:
+                dungeons pack into the space around the city until what is left
+                is too small for even one minimum-size room.
+              </p>
               <p className="text-sm text-gray-400">
                 Dungeons on map:{' '}
                 <span className="text-amber-100 font-semibold">{dungeonCount}</span>
+                {' · '}
+                Rooms:{' '}
+                <span className="text-amber-100 font-semibold">{roomCount}</span>
+                {' · '}
+                <span className="text-gray-500">every tile used</span>
               </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleGenerateDungeon}
-                  className="flex-1 px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Generate Dungeon
-                </button>
-                <button
-                  onClick={handleDeleteDungeon}
-                  className="flex-1 px-4 py-2 bg-orange-900/60 hover:bg-orange-800/60 text-orange-100 rounded border border-orange-700/50 transition-colors"
-                >
-                  Delete Dungeon
-                </button>
-              </div>
-              {dungeonMsg && (
-                <p className="text-sm text-red-300">{dungeonMsg}</p>
+              {dungeonCount === 0 && (
+                <p className="text-sm text-red-300">
+                  Nothing fits — enlarge the map or shrink the city / min room size.
+                </p>
               )}
+              <button
+                onClick={onRegenerate}
+                className="w-full px-4 py-2 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-100 rounded border border-emerald-700/50 transition-colors flex items-center justify-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Generate Map
+              </button>
             </div>
           </section>
 

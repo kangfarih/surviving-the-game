@@ -11,6 +11,7 @@ export default function Home() {
   const [config, setConfig] = useState<GameConfig>(DEFAULT_CONFIG);
   const [showGrid, setShowGrid] = useState(false);
   const [dungeonCount, setDungeonCount] = useState(0);
+  const [roomCount, setRoomCount] = useState(0);
   const [boot, setBoot] = useState<{ done: boolean; world: WorldData | null }>({
     done: false,
     world: null,
@@ -58,6 +59,7 @@ export default function Home() {
         if (world) {
           setConfig({ ...world.config });
           setDungeonCount(world.dungeons.length);
+          setRoomCount(world.dungeons.reduce((n, d) => n + d.rooms.length, 0));
           setBoot({ done: true, world });
         } else {
           setBoot({ done: true, world: null });
@@ -74,24 +76,17 @@ export default function Home() {
     };
   }, []);
 
-  const refreshDungeonCount = () => {
+  const refreshCounts = () => {
     const data = gameCanvasRef.current?.getWorldData();
-    setDungeonCount(data?.dungeons.length ?? 0);
+    if (!data) return;
+    setDungeonCount(data.dungeons.length);
+    setRoomCount(data.dungeons.reduce((n, d) => n + d.rooms.length, 0));
   };
 
-  // Append ONE dungeon via the engine; returns false when the map is full
-  // so the panel can show "No space" feedback (and stays open).
-  const handleGenerate = () => {
-    const ok = gameCanvasRef.current?.addDungeon() ?? false;
-    refreshDungeonCount();
-    return ok;
-  };
-
-  // Remove the OLDEST dungeon (FIFO).
-  const handleDeleteDungeon = () => {
-    const ok = gameCanvasRef.current?.removeOldestDungeon() ?? false;
-    refreshDungeonCount();
-    return ok;
+  // Regenerate the whole world from seed + config (same seed = same map).
+  const handleRegenerate = () => {
+    gameCanvasRef.current?.regenerate();
+    refreshCounts();
   };
 
   const handleConfigChange = (newConfig: GameConfig) => {
@@ -106,6 +101,7 @@ export default function Home() {
     gameCanvasRef.current?.loadWorldData(data);
     setConfig({ ...data.config });
     setDungeonCount(data.dungeons.length);
+    setRoomCount(data.dungeons.reduce((n, d) => n + d.rooms.length, 0));
   };
 
   return (
@@ -128,6 +124,10 @@ export default function Home() {
             config={config}
             showGrid={showGrid}
             initialWorldData={boot.world}
+            onStats={(dungeons, rooms) => {
+              setDungeonCount(dungeons);
+              setRoomCount(rooms);
+            }}
           />
         )}
       </div>
@@ -138,11 +138,11 @@ export default function Home() {
         config={config}
         onConfigChange={handleConfigChange}
         onClose={() => setIsConfigOpen(false)}
-        onGenerate={handleGenerate}
-        onDeleteDungeon={handleDeleteDungeon}
+        onRegenerate={handleRegenerate}
         showGrid={showGrid}
         onToggleGrid={() => setShowGrid((prev) => !prev)}
         dungeonCount={dungeonCount}
+        roomCount={roomCount}
         getWorldData={getWorldData}
         onLoadWorld={handleLoadWorld}
       />

@@ -17,11 +17,17 @@ export interface GameConfig {
   cityWidth: number; // in tiles
   cityHeight: number; // in tiles
 
-  // Dungeon settings
-  roomsPerDungeon: number;
-  minRoomSize: number; // in tiles
-  maxRoomSize: number; // in tiles
-  corridorWidth: number; // in tiles
+  // Dungeon settings (gen-v2: full-fill pack + BSP, ported from the
+  // standalone dungeon-generator.html prototype)
+  minRoomSize: number; // in tiles — smallest playable room floor
+  minRoomsPerDungeon: number; // incl. boss room
+  maxRoomsPerDungeon: number; // incl. boss room
+
+  // Deprecated gen-v1 fields. Kept optional so legacy saved worlds still
+  // load; ignored by the gen-v2 generator (see resolveConfig migration).
+  roomsPerDungeon?: number;
+  maxRoomSize?: number; // in tiles
+  corridorWidth?: number; // in tiles
 }
 
 export interface Point {
@@ -81,14 +87,13 @@ export enum TileType {
 
 export const DEFAULT_CONFIG: GameConfig = {
   seed: 1337,
-  mapWidth: 384,
-  mapHeight: 216,
+  mapWidth: 60,
+  mapHeight: 40,
   tilePixelSize: 16,
   includeCity: true,
-  cityWidth: 128,
-  cityHeight: 72,
-  roomsPerDungeon: 5,
-  minRoomSize: 18,
-  maxRoomSize: 32,
-  corridorWidth: 2,
+  cityWidth: 14,
+  cityHeight: 14,
+  minRoomSize: 7,
+  minRoomsPerDungeon: 4,
+  maxRoomsPerDungeon: 7,
 };

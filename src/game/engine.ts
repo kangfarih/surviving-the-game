@@ -1,24 +1,18 @@
 import * as PIXI from 'pixi.js';
-import { Dungeon, GameConfig, Room, TileType, TileMap, WorldData } from './types';
-import {
-  createRng,
-  generateSingleDungeon,
-  getCityRect,
-  renderWorld,
-  SeededRandom,
-} from './dungeon/generator';
+import { Dungeon, GameConfig, TileType, TileMap, WorldData } from './types';
+import { generateWorldDungeons, renderWorld } from './dungeon/generator';
 
-// Color palette for tiles
+// Color palette ported from the dungeon-generator.html prototype.
 const TILE_COLORS: Record<TileType, number> = {
   [TileType.EMPTY]: 0x000000,
-  [TileType.WALL]: 0x4a4a4a,
-  [TileType.FLOOR]: 0x8b7355,
-  [TileType.CORRIDOR]: 0x9b8b6b,
-  [TileType.CITY_FLOOR]: 0x6b8b6b,
-  [TileType.CITY_WALL]: 0x5a6a5a,
+  [TileType.WALL]: 0x232838,
+  [TileType.FLOOR]: 0x4b5568,
+  [TileType.CORRIDOR]: 0x39414f,
+  [TileType.CITY_FLOOR]: 0xc9b896,
+  [TileType.CITY_WALL]: 0x5b4a3a,
   [TileType.DOOR]: 0x8b4513,
-  [TileType.BOSS_FLOOR]: 0x8b2252,
-  [TileType.START_FLOOR]: 0x4169e1,
+  [TileType.BOSS_FLOOR]: 0x7a2e2e,
+  [TileType.START_FLOOR]: 0x2e7a4f,
 };
 
 const MIN_ZOOM = 0.3;
@@ -33,8 +27,6 @@ export class GameEngine {
   private config: GameConfig;
   private tileMap: TileMap | null = null;
   private dungeons: Dungeon[] = [];
-  private nextDungeonId = 0;
-  private rng: SeededRandom;
   private isDragging: boolean = false;
   private lastMousePos: { x: number; y: number } = { x: 0, y: 0 };
   private offset: { x: number; y: number } = { x: 0, y: 0 };
@@ -53,7 +45,6 @@ export class GameEngine {
 
   constructor(config: GameConfig) {
     this.config = config;
-    this.rng = createRng(config.seed ?? Date.now());
   }
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
@@ -158,8 +149,15 @@ export class GameEngine {
     this.applyCoverView();
   };
 
+  /** Full regenerate: plan all dungeons from seed + config, then draw. */
   generate(): void {
-    // Re-render the explicit world state (city + current dungeons).
+    // Deterministic full-fill: same seed + config always yields the same world.
+    this.dungeons = generateWorldDungeons(this.config);
+    this.redraw();
+  }
+
+  /** Re-render the explicit world state (city + current dungeons). */
+  private redraw(): void {
     this.tileMap = renderWorld(this.config, this.dungeons);
 
     if (!this.app) return;
@@ -437,56 +435,10 @@ export class GameEngine {
   }
 
   updateConfig(config: GameConfig): void {
-    const seedChanged = config.seed !== this.config.seed;
     this.config = config;
-    if (seedChanged) {
-      this.rng = createRng(config.seed ?? Date.now());
-    }
-    // Existing dungeons are kept; rooms outside the new bounds are clipped
-    // by the render guards.
+    // Existing dungeons can't survive a config change: room footprints depend
+    // on map/city/room settings, so plan everything fresh (same seed = same map).
     this.generate();
-  }
-
-  /** Collect the city pseudo-room plus all dungeon rooms for overlap checks. */
-  private collectExistingRooms(): Room[] {
-    const existing: Room[] = [];
-    const cityRect = getCityRect(this.config);
-    if (cityRect) {
-      existing.push({
-        id: -1,
-        rect: cityRect,
-        connected: [],
-        isStart: false,
-        isBoss: false,
-      });
-    }
-    for (const dungeon of this.dungeons) {
-      existing.push(...dungeon.rooms);
-    }
-    return existing;
-  }
-
-  /** Append one dungeon; returns false when the map is full. */
-  addDungeon(): boolean {
-    const dungeon = generateSingleDungeon(
-      this.config,
-      this.collectExistingRooms(),
-      this.nextDungeonId,
-      this.rng,
-    );
-    if (!dungeon) return false;
-    this.dungeons.push(dungeon);
-    this.nextDungeonId++;
-    this.generate();
-    return true;
-  }
-
-  /** Delete the oldest dungeon (FIFO); returns false when empty. */
-  removeOldestDungeon(): boolean {
-    if (this.dungeons.length === 0) return false;
-    this.dungeons.shift();
-    this.generate();
-    return true;
   }
 
   getWorldData(): WorldData {
@@ -504,7 +456,6 @@ export class GameEngine {
   }
 
   loadWorldData(data: WorldData): void {
-    const seedChanged = data.config.seed !== this.config.seed;
     this.config = { ...data.config };
     this.dungeons = data.dungeons.map((d) => ({
       ...d,
@@ -514,14 +465,7 @@ export class GameEngine {
         connected: [...r.connected],
       })),
     }));
-    this.nextDungeonId =
-      this.dungeons.length === 0
-        ? 0
-        : Math.max(...this.dungeons.map((d) => d.id)) + 1;
-    if (seedChanged) {
-      this.rng = createRng(this.config.seed ?? Date.now());
-    }
-    this.generate();
+    this.redraw();
   }
 
   destroy(): void {

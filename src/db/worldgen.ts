@@ -3,12 +3,17 @@ import { DEFAULT_CONFIG, Dungeon, GameConfig, TileMap } from '@/game/types';
 
 // Merge a partial client-supplied config over defaults. Seed falls back to
 // Date.now() so worlds are always reproducible once persisted.
+//
+// gen-v2 migration: legacy configs carry `roomsPerDungeon` instead of
+// `min/maxRoomsPerDungeon` — derive the range from it when the new fields
+// are absent. Unknown legacy keys (maxRoomSize, corridorWidth) ride along
+// harmlessly via the spread and are ignored by the generator.
 export function resolveConfig(input: unknown): GameConfig {
   const partial =
     input && typeof input === 'object'
       ? (input as Partial<GameConfig>)
       : {};
-  return {
+  const merged: GameConfig = {
     ...DEFAULT_CONFIG,
     ...partial,
     seed:
@@ -16,6 +21,32 @@ export function resolveConfig(input: unknown): GameConfig {
         ? partial.seed
         : (DEFAULT_CONFIG.seed ?? Date.now()),
   };
+  const legacyRooms =
+    typeof partial.roomsPerDungeon === 'number' &&
+    Number.isFinite(partial.roomsPerDungeon)
+      ? Math.max(1, Math.floor(partial.roomsPerDungeon))
+      : null;
+  if (
+    legacyRooms !== null &&
+    (typeof merged.minRoomsPerDungeon !== 'number' ||
+      typeof merged.maxRoomsPerDungeon !== 'number')
+  ) {
+    merged.minRoomsPerDungeon = legacyRooms;
+    merged.maxRoomsPerDungeon = legacyRooms;
+  }
+  if (
+    typeof merged.minRoomsPerDungeon !== 'number' ||
+    typeof merged.maxRoomsPerDungeon !== 'number'
+  ) {
+    merged.minRoomsPerDungeon = DEFAULT_CONFIG.minRoomsPerDungeon;
+    merged.maxRoomsPerDungeon = DEFAULT_CONFIG.maxRoomsPerDungeon;
+  }
+  if (merged.minRoomsPerDungeon > merged.maxRoomsPerDungeon) {
+    const swap = merged.minRoomsPerDungeon;
+    merged.minRoomsPerDungeon = merged.maxRoomsPerDungeon;
+    merged.maxRoomsPerDungeon = swap;
+  }
+  return merged;
 }
 
 // Short deterministic fingerprint of a generated tile grid.

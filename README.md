@@ -10,9 +10,11 @@ The core idea is simple: **teleport an agent in, give it the same rules as every
 
 Playable world viewer (no combat yet):
 
-- Procedural `TileMap` generation: N dungeons × sequential rooms + corridors, optional city with buildings, start / boss rooms
+- Procedural `TileMap` generation: full-fill map (no void tiles) — optional
+  centered city with buildings, regions strip-packed with dungeons, BSP rooms
+  per dungeon, entrance → … → largest-room-as-boss chains + corridors
 - PixiJS 7 canvas renderer: pan (drag), zoom (wheel / double-click), centered + resize-aware
-- Config panel for live world tuning: map size, tile size, city, dungeons, rooms, corridors
+- Config panel for live world tuning: map size, tile size, seed, city, min room size, rooms per dungeon
 - Classless stats / skills / combat design docs under `docs/` (brainstorm, not implemented)
 
 ## Vision
@@ -59,20 +61,18 @@ npm run lint
 
 - **Drag** — pan camera
 - **Wheel / double-click** — zoom (0.5×–3×)
-- **Top menu → Generate** — regenerate world with current config
-- **Top menu → Config** — open world-gen panel
+- **Top menu → Config** — open world-gen panel (Generate Map, randomize seed)
 
 ## World-Gen Config (`src/game/types.ts`)
 
 | Key | Default | Meaning |
 |---|---|---|
-| `mapWidth / mapHeight` | 100 × 80 | world size in tiles |
+| `mapWidth / mapHeight` | 60 × 40 | world size in tiles |
 | `tilePixelSize` | 16 | px per tile |
-| `includeCity / citySize` | true / 20 | safe-zone city block |
-| `dungeonCount` | 3 | separate dungeon regions |
-| `roomsPerDungeon` | 5 | rooms per dungeon |
-| `minRoomSize / maxRoomSize` | 5 / 10 | room footprint in tiles |
-| `corridorWidth` | 2 | corridor thickness in tiles |
+| `seed` | 1337 | deterministic seed (same seed + settings = same map) |
+| `includeCity / cityWidth / cityHeight` | true / 14 / 14 | centered city with buildings |
+| `minRoomSize` | 7 | smallest playable room floor, in tiles |
+| `minRoomsPerDungeon / maxRoomsPerDungeon` | 4 / 7 | rooms per dungeon, incl. boss (largest room) |
 
 ## Project Structure
 
