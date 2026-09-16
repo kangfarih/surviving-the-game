@@ -1,25 +1,20 @@
-# Skill Tree — Leveled Catalog
+# Skill Tree — Unified Families (one entry per comparison row)
 
-- Method: every RO skill + every ToS skill from
-  docs/skills-comparison-tos-ro-coa.md rows #1-80 appears exactly once
-  as primary (lowest row wins; 4 portal/blink ties fixed by override).
-- CoA omitted (RO+ToS only per brief); Heal is a subtree of Holy, no top branch.
-- Source shown by cell style: RO cells are Job: Name, ToS cells are Tree-Class: Name.
-- Order: ascending Lv, then name, inside each Lv-band table.
-- Calc: factor_base = K x (DPS x CD_eff x costMult) / (hits x aoe x cc),
-  shown per skill as factor% x hits, CD, cost + effect. ~ = band estimate;
-  bare numbers (5x5, 7x7, N-hit block, gem cost) are RO/ToS known values.
-- Tags abbreviated (legend): phys, proj, mel, grd, chn, ins, min, sho,
-  cls, shr, bst, sus, ctl, mob, sum, sup, cmb, def, bld, frz, shk, chm,
-  kb, ls, exe, opn, fol, brk, stn, auto. Elements + dot/burn/fear/pull/root stay full.
-- Day-0 exception (advancement §6.4): arrival grants 2 random skills
-  (1 damage + 1 survival, marked Day-0) ignoring Lv gates; gates apply from first camp.
-- P0 pins (advancement §6.3): Lv1 bolts/heal/dash, Lv2 wall/combo glue,
-  Lv3 snare/turret, Lv4 drum/execute. All other Lv = tier floor + name-hash spread.
+- Method: every RO + ToS primary from the prior leveled catalog
+  appears exactly once, merged into its comparison-row family
+  (docs/skills-comparison-tos-ro-coa.md #1-80). Same row + same
+  whitelist tags + same combat purpose = ONE skill entry.
+- CoA omitted (RO+ToS only); Heal lives only under Holy, Nature refs it.
+- Lv = lowest source Lv; higher-Lv variants noted per family.
+- Tags are canonical whitelist tokens (skill-tag-taxonomy.md §1).
+- Calc = representative factor% x hits + CD/cost; variant range in notes.
+- Sources: RO cells are Job: Name, ToS cells are Tree-Class: Name.
+- Day-0 = arrival-pool skill; P0 = pinned per advancement §6.3 (11: #1,#21,#7,#72,#47,#51,#40,#64,#52,#25,#26).
+- Order: Lv ascending inside each table. No table > 40 rows.
 
 ## 1. Level-Requirement Model
 
-- RO tiers map to char Lv; ToS tiers map the same way; within-tier spread is draft.
+- RO tiers map to char Lv; ToS tiers map the same way.
 
 | Tier | RO equiv | ToS equiv | Our Lv | Unlocks |
 |---|---|---|---|---|
@@ -27,879 +22,541 @@
 | 1st job | Swordman-Mage-Archer | T1 adv | 1-5 | core verbs + heal |
 | 2nd job | Knight-Wizard-Hunter | T2 adv | 10-20 | AoE, combo, pets |
 | Trans | trans 2nd, Star Emp | T2 late | 25 | flags, drain, strip |
-| 3rd job | Warlock-Ranger-Sura | T3 adv | 30-40 | fields, meteors, wards |
-| 4th job | Arch Mage-Cardinal | endgame | 45-50 | ult nukes, rez, clones |
+| 3rd job | Warlock-Ranger-Sura | T3 adv | 30-40 | fields, meteors |
+| 4th job | Arch Mage-Cardinal | endgame | 45-50 | ult nukes, rez |
 
 ## 2. Magic
 
 ### Fire
 
-- Lv1-5 (12)
-
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Mage: Fire Ball | fire,proj,shr,bst | ~120%x1 5x5, CD6 | R#2 5x5 splash |
-| 1 | Mage: Fire Bolt | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 Day-0 + bolt |
-| 1 | Super Novice: Fire Bolt | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-| 1 | Wizard-Pyromancer: Fireball | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 Day-0 + bolt |
-| 2 | Mage: Fire Wall | fire,grd,shr,dot,burn | ~50%/t wall, CD12 | R#3 blocks + burns |
-| 2 | Mage: Soul Strike | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-| 5 | Wizard-Pyromancer: Enchant Fire | fire,ins,shr,dot,burn | ~40%/t 6s, CD8 + burn | R#5 ignite |
-| 5 | Wizard-Pyromancer: Fire Pillar | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 5 | Wizard-Pyromancer: Fire Wall | fire,grd,shr,dot,burn | ~50%/t 8s, CD12, 14MP | R#3 field + burn |
-| 5 | Wizard-Pyromancer: Flame Ground | fire,grd,shr,dot,burn | ~50%/t 8s, CD12, 14MP | R#3 field + burn |
-| 5 | Wizard-Pyromancer: Flare | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-| 5 | Wizard-Pyromancer: Hell Breath | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
+| 1 | Fire Bolt | fire, projectile, long, burst | ~150%x1, CD4, 12MP | R#1; 12v; Lv1-49; Day-0; P0 L1 |
+| 1 | Fire Splash | fire, projectile, short, burst | ~120%x1 spl, CD6, 14MP | R#2; 11v; Lv1-40 |
+| 2 | Fire Field | fire, ground, short, dot, burn | ~50%/t 8s, CD12, 14MP | R#3; 8v; Lv2-48 |
+| 5 | Ignite | fire, instant, short, dot, burn | ~40%/t 6s, CD8 + burn | R#5; 6v; Lv5-35 |
+| 16 | Meteor | fire, ground, long, burst | ~120%x5, CD25, 30MP | R#4; 9v; Lv16-49 |
 
-- Lv6-15 (4)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 10 | Gunslinger: Full Blast | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 13 | Alchemist: Acid Terror | fire,ins,shr,dot,burn | ~40%/t 6s, CD8 + burn | R#5 ignite |
-| 15 | Gunslinger: Desperado | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 15 | Sage: Hindsight | fire,proj,long,bst | ~150% auto-bolt, CD6 | R#1 auto-bolt |
-
-- Lv16-30 (12)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 16 | Archer-Cannoneer: Cannon Shot | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 16 | Archer-Cannoneer: Siege Burst | fire,grd,long,bst | ~120%x5, CD25, 30MP | R#4 sky nuke |
-| 16 | Cleric-Plague Doctor: Incinerate | fire,ins,shr,dot,burn | ~40%/t 6s, CD8 + burn | R#5 ignite |
-| 16 | Scout-Bullet Marker: Bloody Overdrive | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 16 | Scout-Bullet Marker: Napalm Bullet | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 16 | Wizard-Bokor: Damballa | fire,ins,shr,dot,burn | ~40%/t 6s, CD8 + burn | R#5 ignite |
-| 16 | Wizard-Elementalist: Fire Pillar | fire,grd,shr,dot,burn | ~50%/t 8s, CD12, 14MP | R#3 field + burn |
-| 16 | Wizard-Elementalist: Meteor | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-| 16 | Wizard-Elementalist: Storm Dust | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-| 16 | Wizard: Meteor Storm | fire,grd,long,bst | ~120%x5 7x7, CD25 | R#4 7x7 + stun |
-| 19 | Alchemist: Bomb | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 19 | Wizard: Fire Pillar | fire,grd,shr,dot,burn | ~50%/t 8s, CD12, 14MP | R#3 field + burn |
-
-- Lv31-50 (18)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 31 | Archer-Matross: Artillery | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 31 | Archer-Matross: Orbital strike skills | fire,grd,long,bst | ~120%x5, CD25, 30MP | R#4 sky nuke |
-| 31 | Wizard-Onmyoji: Fire Fox Shikigami | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-| 31 | Wizard-Taoist: Eradication | fire,grd,long,bst | ~120%x5, CD25, 30MP | R#4 sky nuke |
-| 31 | Wizard-Taoist: Storm Calling | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-| 31 | Wizard-Terramancer: Ember Field | fire,grd,shr,dot,burn | ~50%/t 8s, CD12, 14MP | R#3 field + burn |
-| 34 | Rebellion: Dragon Tail | fire,ins,shr,dot,burn | ~40%/t 6s, CD8 + burn | R#5 ignite |
-| 35 | Genetic: Fire Expansion | fire,ins,shr,dot,burn | ~40%/t 6s, CD8 + burn | R#5 ignite |
-| 35 | Sorcerer: Warmer | fire,grd,shr,dot,burn | ~50%/t 8s, CD12, 14MP | R#3 field + burn |
-| 35 | Warlock: Crimson Rock | fire,grd,long,bst | ~120%x5, CD25, 30MP | R#4 sky nuke |
-| 36 | Warlock: Summon Fire Ball | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-| 38 | Warlock: Comet | fire,grd,long,bst | ~120%x5, CD25, 30MP | R#4 sky nuke |
-| 40 | Mechanic: Arm Cannon | fire,proj,shr,bst | ~120%x1 spl, CD6, 14MP | R#2 splash |
-| 45 | Arch Mage: All Bloom | fire,grd,long,bst | ~120%x5, CD25, 30MP | R#4 sky nuke |
-| 45 | Arch Mage: Crimson Arrow | fire,grd,long,bst | ~120%x5, CD25, 30MP | R#4 sky nuke |
-| 48 | Elemental Master: Conflagration | fire,grd,shr,dot,burn | ~50%/t 8s, CD12, 14MP | R#3 field + burn |
-| 49 | Arch Mage: Floral Flare Road | fire,grd,long,bst | ~120%x5, CD25, 30MP | R#4 sky nuke |
-| 49 | Hyper Novice: Self Study Sorcery | fire,proj,long,bst | ~150%x1, CD4, 12MP | R#1 bolt |
-
-### Frost
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 1 | Super Novice: Cold Bolt | frost,proj,long,bst | ~150%x1, CD4, 12MP | R#6 bolt |
-| 1 | Wizard: Frost Nova | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 Day-0 + nova + chill |
-| 4 | Mage: Cold Bolt | frost,proj,long,bst | ~150%x1, CD4, 12MP | R#6 bolt |
-| 5 | Wizard-Cryomancer: Ice Blast | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 nova + chill |
-| 5 | Wizard-Cryomancer: Ice Bolt | frost,proj,long,bst | ~150%x1, CD4, 12MP | R#6 bolt |
-| 5 | Wizard-Cryomancer: Ice Pike | frost,proj,shr,bst,frz | ~130% line, CD8 + frz | R#8 lane spikes |
-| 5 | Wizard-Cryomancer: Snow Rolling | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 nova + chill |
-| 10 | Wizard: Water Ball | frost,proj,shr,bst,frz | ~130% line, CD8 | R#8 needs water |
-| 13 | Wizard: Storm Gust | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 nova + chill |
-| 16 | Wizard-Elementalist: Frost Cloud | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 nova + chill |
-| 16 | Wizard-Elementalist: Hail | frost,proj,long,bst | ~150%x1, CD4, 12MP | R#6 bolt |
-| 16 | Wizard-Rune Caster: Rune of Ice | frost,proj,shr,bst,frz | ~130% line, CD8 + frz | R#8 lane spikes |
-| 31 | Warlock: Frost Misty | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 nova + chill |
-| 31 | Wizard-Keraunos: Blizzard Drive | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 nova + chill |
-| 31 | Wizard-Onmyoji: Water Shikigami | frost,proj,long,bst | ~150%x1, CD4, 12MP | R#6 bolt |
-| 31 | Wizard-Taoist: reduced-lane charms | frost,proj,shr,bst,frz | ~130% line, CD8 + frz | R#8 lane spikes |
-| 39 | Warlock: Jack Frost | frost,proj,long,bst | ~150%x1, CD4, 12MP | R#6 bolt |
-| 40 | Sorcerer: Varetyr Spear | frost,proj,shr,bst,frz | ~130% line, CD8 + frz | R#8 lane spikes |
-| 40 | Warlock: Summon Water Ball | frost,proj,long,bst | ~150%x1, CD4, 12MP | R#6 bolt |
-| 45 | Arch Mage: Crystal Impact | frost,proj,shr,bst,frz | ~130% line, CD8 + frz | R#8 lane spikes |
-| 46 | Arch Mage: Frozen Slash | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 nova + chill |
-| 48 | Arch Mage: Rain of Crystal | frost,nova,shr,bst,frz | ~110% AoE, CD9 + chill | R#7 nova + chill |
+- **Lv1 Fire Bolt** (R#1) — ~150%x1, CD4, 12MP. variants Lv1-49. Day-0 arrival pool. P0 L1.
+  - RO: Mage: Fire Bolt; Super Novice: Fire Bolt; Mage: Soul Strike; Sage: Hindsight; Warlock: Summon Fire Ball; Hyper Novice: Self Study Sorcery
+  - ToS: Wizard-Pyromancer: Fireball; Wizard-Pyromancer: Flare; Wizard-Elementalist: Meteor; Wizard-Elementalist: Storm Dust; Wizard-Onmyoji: Fire Fox Shikigami
+  + Wizard-Taoist: Storm Calling
+- **Lv1 Fire Splash** (R#2) — ~120%x1 spl, CD6, 14MP. variants Lv1-40.
+  - RO: Mage: Fire Ball; Gunslinger: Full Blast; Gunslinger: Desperado; Alchemist: Bomb; Mechanic: Arm Cannon
+  - ToS: Wizard-Pyromancer: Fire Pillar; Wizard-Pyromancer: Hell Breath; Archer-Cannoneer: Cannon Shot; Scout-Bullet Marker: Bloody Overdrive
+  + Scout-Bullet Marker: Napalm Bullet; Archer-Matross: Artillery
+- **Lv2 Fire Field** (R#3) — ~50%/t 8s, CD12, 14MP. variants Lv2-48.
+  - RO: Mage: Fire Wall; Wizard: Fire Pillar; Sorcerer: Warmer; Elemental Master: Conflagration
+  - ToS: Wizard-Pyromancer: Fire Wall; Wizard-Pyromancer: Flame Ground; Wizard-Elementalist: Fire Pillar; Wizard-Terramancer: Ember Field
+- **Lv5 Ignite** (R#5) — ~40%/t 6s, CD8 + burn. variants Lv5-35.
+  - RO: Alchemist: Acid Terror; Rebellion: Dragon Tail; Genetic: Fire Expansion
+  - ToS: Wizard-Pyromancer: Enchant Fire; Cleric-Plague Doctor: Incinerate; Wizard-Bokor: Damballa
+- **Lv16 Meteor** (R#4) — ~120%x5, CD25, 30MP. variants Lv16-49.
+  - RO: Wizard: Meteor Storm; Warlock: Crimson Rock; Warlock: Comet; Arch Mage: All Bloom; Arch Mage: Crimson Arrow; Arch Mage: Floral Flare Road
+  - ToS: Archer-Cannoneer: Siege Burst; Archer-Matross: Orbital strike skills; Wizard-Taoist: Eradication
 
 ### Storm
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Super Novice: Lightning Bolt | storm,proj,long,bst,shk | ~150%x1, CD4 + shk | R#10 bolt + shk |
-| 3 | Mage: Thunderstorm | storm,grd,long,bst,shk | ~110%x3 bnc, CD12 + shk | R#11 chain storm |
-| 5 | Cleric-Krivis: Zaibas | storm,proj,long,bst,shk | ~150%x1, CD4 + shk | R#10 bolt + shk |
-| 5 | Mage: Lightning Bolt | storm,proj,long,bst,shk | ~150%x1, CD4 + shk | R#10 bolt + shk |
-| 16 | Wizard-Elementalist: Electrocute | storm,proj,long,bst,shk | ~150%x1, CD4 + shk | R#10 bolt + shk |
-| 18 | Wizard: Jupitel Thunder | storm,proj,long,bst,shk | ~100%x5 + kb, CD5 | R#10 multi-hit |
-| 18 | Wizard: Lord of Vermilion | storm,grd,long,bst,shk | ~110%x3 bnc, CD12 + shk | R#11 chain storm |
-| 30 | Warlock: Earth Strain | storm,grd,long,bst,shk | ~110%x3 bnc, CD12 + shk | R#11 chain storm |
-| 31 | Wizard-Keraunos: Chain Volta | storm,grd,long,bst,shk | ~110%x3 bnc, CD12 + shk | R#11 chain storm |
-| 31 | Wizard-Keraunos: Lightning Strike | storm,proj,long,bst,shk | ~150%x1, CD4 + shk | R#10 bolt + shk |
-| 31 | Wizard-Taoist: Zaibas | storm,proj,long,bst,shk | ~150%x1, CD4 + shk | R#10 bolt + shk |
-| 34 | Warlock: Chain Lightning | storm,proj,long,bst,shk | ~150%x1, CD4 + shk | R#10 bolt + shk |
-| 45 | Arch Mage: Tornado Storm | storm,grd,long,bst,shk | ~110%x3 bnc, CD12 + shk | R#11 chain storm |
-| 49 | Arch Mage: Storm Cannon | storm,grd,long,bst,shk | ~110%x3 bnc, CD12 + shk | R#11 chain storm |
-| 50 | Arch Mage: Destructive Hurricane | storm,grd,long,bst,shk | ~110%x3 bnc, CD12 + shk | R#11 chain storm |
+| 1 | Lightning Bolt | storm, projectile, long, burst, shock | ~150%x1, CD4 + shk | R#10; 8v; Lv1-34 |
+| 3 | Storm Field | storm, ground, long, burst, shock | ~110%x3 bnc, CD12 + shk | R#11; 7v; Lv3-50 |
 
-### Arcane
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 16 | Wizard-Psychokino: Gravity Pole | arcane,chn,long,bst | ~200% chn 2s, CD10 | R#27 beam |
-| 16 | Wizard-Psychokino: Psychic Pressure | arcane,chn,long,bst | ~200% chn 2s, CD10 | R#27 beam |
-| 31 | Wizard-Onmyoji: Toyou | arcane,chn,long,bst | ~200% chn 2s, CD10 | R#27 beam |
-| 32 | Warlock: Tetra Vortex | arcane,chn,long,bst | ~180%x4 elem, CD15 | R#27 elem combo |
-| 36 | Soul Reaper: Soul Curse | arcane,chn,long,bst | ~200% chn 2s, CD10 | R#27 beam |
-| 50 | Arch Mage: Astral Strike | arcane,chn,long,bst | ~200% chn 2s, CD10 | R#27 beam |
+- **Lv1 Lightning Bolt** (R#10) — ~150%x1, CD4 + shk. variants Lv1-34.
+  - RO: Super Novice: Lightning Bolt; Mage: Lightning Bolt; Wizard: Jupitel Thunder; Warlock: Chain Lightning
+  - ToS: Cleric-Krivis: Zaibas; Wizard-Elementalist: Electrocute; Wizard-Keraunos: Lightning Strike; Wizard-Taoist: Zaibas
+- **Lv3 Storm Field** (R#11) — ~110%x3 bnc, CD12 + shk. variants Lv3-50.
+  - RO: Mage: Thunderstorm; Wizard: Lord of Vermilion; Warlock: Earth Strain; Arch Mage: Tornado Storm; Arch Mage: Storm Cannon; Arch Mage: Destructive Hurricane
+  - ToS: Wizard-Keraunos: Chain Volta
 
 ### Shadow
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 3 | Mage: Napalm Beat | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 15 | Wizard: Napalm Vulcan | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 16 | Wizard-Bokor: Effigy | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 16 | Wizard-Bokor: Hexing | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 31 | Cleric-Zealot: Immolation | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 31 | Warlock: Soul Expansion | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 31 | Wizard-Shadowmancer: Shadow Condensation | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 31 | Wizard-Shadowmancer: Shadow Eruption | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 31 | Wizard-Shadowmancer: Shadow Thorn | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 31 | Wizard-Warlock: Dark Theurge | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 31 | Wizard-Warlock: Evil Sacrifice | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 31 | Wizard-Warlock: Mastema | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 36 | Warlock: Drain Life | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 36 | Warlock: White Imprison | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 37 | Warlock: Hell Inferno | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 49 | Arch Mage: Deadly Projection | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
-| 49 | Arch Mage: Soul Vulcan Strike | shadow,proj,long,bst | ~140%x1, CD5 | R#16 ghost line |
+| 3 | Shadow Bolt | shadow, projectile, long, burst | ~140%x1, CD5 | R#16; 17v; Lv3-49 |
+
+- **Lv3 Shadow Bolt** (R#16) — ~140%x1, CD5. variants Lv3-49.
+  - RO: Mage: Napalm Beat; Wizard: Napalm Vulcan; Warlock: Soul Expansion; Warlock: Drain Life; Warlock: White Imprison; Warlock: Hell Inferno; Arch Mage: Deadly Projection
+  + Arch Mage: Soul Vulcan Strike
+  - ToS: Wizard-Bokor: Effigy; Wizard-Bokor: Hexing; Cleric-Zealot: Immolation; Wizard-Shadowmancer: Shadow Condensation; Wizard-Shadowmancer: Shadow Eruption
+  + Wizard-Shadowmancer: Shadow Thorn; Wizard-Warlock: Dark Theurge; Wizard-Warlock: Evil Sacrifice; Wizard-Warlock: Mastema
 
 ### Blood
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 16 | Swordsman-Luchador: Bloodsport | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
-| 16 | Wizard-Featherfoot: Blood Bath | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
-| 16 | Wizard-Featherfoot: Blood Sucking | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
-| 16 | Wizard-Featherfoot: Kurdaitcha | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
-| 16 | Wizard-Featherfoot: Ngadhundi | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
-| 17 | Ninja: Shadow Slash | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
-| 30 | Kagerou: Soul Deprivation | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
-| 31 | Cleric-Zealot: Blind Faith | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
-| 34 | Rebellion: Bloodsucker | blood,proj,shr,sus,ls | ~100% + heal 50%, CD8 | R#19 HP loop |
+| 16 | Drain | blood, projectile, short, sustain, lifesteal | ~100% + heal 50%, CD8 | R#19; 9v; Lv16-34 |
+
+- **Lv16 Drain** (R#19) — ~100% + heal 50%, CD8. variants Lv16-34.
+  - RO: Ninja: Shadow Slash; Kagerou: Soul Deprivation; Rebellion: Bloodsucker
+  - ToS: Swordsman-Luchador: Bloodsport; Wizard-Featherfoot: Blood Bath; Wizard-Featherfoot: Blood Sucking; Wizard-Featherfoot: Kurdaitcha; Wizard-Featherfoot: Ngadhundi
+  + Cleric-Zealot: Blind Faith
 
 ### Poison
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Super Novice: Envenom | poison,proj,shr,dot | ~90% + psn 4s, CD5 | R#17 sting |
-| 1 | Thief: Envenom | poison,proj,shr,dot | ~90% + psn 4s, CD5 | R#17 sting |
-| 5 | Archer-Wugushi: Bewitch | poison,grd,shr,dot | ~50%/t 8s, CD12 + psn | R#18 cloud |
-| 5 | Archer-Wugushi: Jincan Gu | poison,grd,shr,dot | ~50%/t 8s, CD12 + psn | R#18 cloud |
-| 5 | Archer-Wugushi: Needle Blow | poison,proj,shr,dot | ~90% + psn 4s, CD5 | R#17 sting |
-| 5 | Archer-Wugushi: Wugong Gu | poison,proj,shr,dot | ~90% + psn 4s, CD5 | R#17 sting |
-| 5 | Archer-Wugushi: Zhendu | poison,grd,shr,dot | ~50%/t 8s, CD12 + psn | R#18 cloud |
-| 10 | Alchemist: Acid Demonstration | poison,grd,shr,dot | ~50%/t 8s, CD12 + psn | R#18 cloud |
-| 13 | Assassin: Enchant Poison | poison,proj,shr,dot | ~90% + psn 4s, CD5 | R#17 sting |
-| 16 | Assassin: Venom Dust | poison,grd,shr,dot | ~50%/t 8s, CD12 + psn | R#18 cloud |
-| 16 | Cleric-Plague Doctor: Black Death Steam | poison,grd,shr,dot | ~50%/t 8s, CD12 + psn | R#18 cloud |
-| 16 | Scout-Rogue: Vendetta | poison,proj,shr,dot | ~90% + psn 4s, CD5 | R#17 sting |
-| 16 | Wizard-Featherfoot: Bone Pointing | poison,proj,shr,dot | ~90% + psn 4s, CD5 | R#17 sting |
-| 31 | Scout-Rangda: Miasma | poison,grd,shr,dot | ~50%/t 8s, CD12 + psn | R#18 cloud |
-| 33 | Guillotine Cross: Poisoning Weapon | poison,grd,shr,dot | ~50%/t 8s, CD12 + psn | R#18 cloud |
-| 36 | Genetic: Hell Plant | poison,grd,shr,dot | bite plant, CD15 | R#18 bite plant |
-| 36 | Guillotine Cross: Venom Impression | poison,proj,shr,dot | ~90% + psn 4s, CD5 | R#17 sting |
+| 1 | Venom Sting | poison, projectile, short, dot | ~90% + psn 4s, CD5 | R#17; 8v; Lv1-36 |
+| 5 | Venom Cloud | poison, ground, short, dot | ~50%/t 8s, CD12 + psn | R#18; 9v; Lv5-36 |
 
-### Holy
+- **Lv1 Venom Sting** (R#17) — ~90% + psn 4s, CD5. variants Lv1-36.
+  - RO: Super Novice: Envenom; Thief: Envenom; Assassin: Enchant Poison; Guillotine Cross: Venom Impression
+  - ToS: Archer-Wugushi: Needle Blow; Archer-Wugushi: Wugong Gu; Scout-Rogue: Vendetta; Wizard-Featherfoot: Bone Pointing
+- **Lv5 Venom Cloud** (R#18) — ~50%/t 8s, CD12 + psn. variants Lv5-36.
+  - RO: Alchemist: Acid Demonstration; Assassin: Venom Dust; Guillotine Cross: Poisoning Weapon; Genetic: Hell Plant
+  - ToS: Archer-Wugushi: Bewitch; Archer-Wugushi: Jincan Gu; Archer-Wugushi: Zhendu; Cleric-Plague Doctor: Black Death Steam; Scout-Rangda: Miasma
 
-#### Nukes
+### Arcane
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Acolyte: Ruwach | holy,proj,long,bst | reveal 9, CD12 | R#14 stealth tax |
-| 3 | Acolyte: Holy Light | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 5 | Acolyte: Turn Undead | holy,proj,long,bst | exe vs undead, CD8 | R#14 undead exe |
-| 5 | Cleric-Priest: Aspersion | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 5 | Cleric-Priest: Exorcise | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 16 | Cleric-Chaplain: Aspergillum | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 16 | Cleric-Miko: Hamaya | holy,grd,shr,bst | ~120% zone, CD12 | R#15 exorcism zone |
-| 16 | Priest: Aspersio-boosted | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 17 | Priest: Magnus Exorcismus | holy,grd,shr,bst | ~120% zone, CD12 | R#15 undead zone |
-| 20 | Crusader: Grand Cross | holy,grd,shr,bst | ~150% self-HP, CD10 | R#15 self HP cost |
-| 31 | Cleric-Crusader: Holy Ground | holy,grd,shr,bst | ~120% zone, CD12 | R#15 exorcism zone |
-| 31 | Cleric-Crusader: Smite | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 31 | Cleric-Exorcist: Entity | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 31 | Cleric-Exorcist: Gregorate | holy,grd,shr,bst | ~120% zone, CD12 | R#15 exorcism zone |
-| 31 | Cleric-Exorcist: Katadikazo | holy,grd,shr,bst | ~120% zone, CD12 | R#15 exorcism zone |
-| 31 | Cleric-Exorcist: Koinonia | holy,grd,shr,bst | ~120% zone, CD12 | R#15 exorcism zone |
-| 31 | Cleric-Exorcist: Rubric | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 31 | Cleric-Inquisitor: God Smash | holy,grd,shr,bst | ~120% zone, CD12 | R#15 exorcism zone |
-| 32 | Arch Bishop: Adoramus | holy,grd,shr,bst | ~120% zone, CD12 | R#15 exorcism zone |
-| 35 | Arch Bishop: Judex | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 45 | Cardinal: Effligo | holy,grd,shr,bst | ~120% zone, CD12 | R#15 exorcism zone |
-| 48 | Cardinal: Arbitrium | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
-| 48 | Cardinal: Framen | holy,proj,long,bst | ~150%x1, CD5 | R#14 undead slayer |
+| 16 | Beam | arcane, channel, long, burst | ~200% chn 2s, CD10 | R#27; 6v; Lv16-50 |
 
-#### Heal
+- **Lv16 Beam** (R#27) — ~200% chn 2s, CD10. variants Lv16-50.
+  - RO: Warlock: Tetra Vortex; Soul Reaper: Soul Curse; Arch Mage: Astral Strike
+  - ToS: Wizard-Psychokino: Gravity Pole; Wizard-Psychokino: Psychic Pressure; Wizard-Onmyoji: Toyou
 
-- Lv1-5 (13)
+### Holy - Nukes
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Acolyte: Heal | holy,ins,shr,sup | heal ~120%, CD10 | R#47 Day-0 + point heal |
-| 1 | Cleric-Cleric: Cure | holy,ins,shr,sup | heal ~120%, CD10 | R#47 point heal |
-| 1 | Cleric-Cleric: Heal | holy,ins,shr,sup | heal ~120%, CD10 | R#47 Day-0 + point heal |
-| 1 | Super Novice: Heal | holy,ins,shr,sup | heal ~120%, CD10 | R#47 point heal |
-| 2 | Acolyte: Cure | holy,ins,shr,sup | cleanse, CD10 | R#56 cure |
-| 2 | Mage: Safety Wall | holy,ins,self,def | block N hits 6s, CD14 | R#51 Day-0 + N-hit block |
-| 5 | Cleric-Priest: Cure | holy,ins,shr,sup | cleanse, CD10 | R#56 cure |
-| 5 | Cleric-Priest: Heal | holy,ins,shr,sup | heal ~120%, CD10 | R#47 point heal |
-| 5 | Cleric-Priest: Healing Factor | holy,grd,shr,sup | heal ~80%/t zone, CD15 | R#48 heal zone |
-| 5 | Cleric-Priest: Mass Heal | holy,ins,shr,sup | heal ~120%, CD10 | R#47 point heal |
-| 5 | Cleric-Priest: Resurrection | holy,ins,shr,sup | rez 100%, CD60 | R#50 rez |
-| 5 | Cleric-Priest: Revive | holy,ins,shr,sup | pre-death buff, CD30 | R#47 death ward |
-| 5 | Cleric-Priest: Stone Skin | holy,ins,self,def | block 3 hits, CD14 | R#51 ward |
+| 1 | Holy Bolt | holy, projectile, long, burst | ~150%x1, CD5 | R#14; 13v; Lv1-48 |
+| 16 | Exorcism Zone | holy, ground, short, burst | ~120% zone, CD12 | R#15; 10v; Lv16-45 |
 
-- Lv6-15 (2)
+- **Lv1 Holy Bolt** (R#14) — ~150%x1, CD5. variants Lv1-48.
+  - RO: Acolyte: Ruwach; Acolyte: Holy Light; Acolyte: Turn Undead; Priest: Aspersio-boosted; Arch Bishop: Judex; Cardinal: Arbitrium; Cardinal: Framen
+  - ToS: Cleric-Priest: Aspersion; Cleric-Priest: Exorcise; Cleric-Chaplain: Aspergillum; Cleric-Crusader: Smite; Cleric-Exorcist: Entity; Cleric-Exorcist: Rubric
+- **Lv16 Exorcism Zone** (R#15) — ~120% zone, CD12. variants Lv16-45.
+  - RO: Priest: Magnus Exorcismus; Crusader: Grand Cross; Arch Bishop: Adoramus; Cardinal: Effligo
+  - ToS: Cleric-Miko: Hamaya; Cleric-Crusader: Holy Ground; Cleric-Exorcist: Gregorate; Cleric-Exorcist: Katadikazo; Cleric-Exorcist: Koinonia; Cleric-Inquisitor: God Smash
 
-| Lv | Skill | Tags | Calc | Notes |
+### Holy - Heal (only heal home; Nature refs here)
+
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 11 | Priest: Highness Heal | holy,ins,shr,sup | heal ~120%, CD10 | R#47 point heal |
-| 12 | Soul Linker: Kaizel | holy,ins,shr,sup | auto-rez on hit, CD60 | R#50 auto-rez buff |
+| 1 | Heal | holy, instant, short, support | heal ~120%, CD10 | R#47; 10v; Lv1-33; Day-0; P0 L1; same tags as #50/#56/#59 |
+| 2 | Barrier | holy, instant, self, defense | block 3 hits, CD14 | R#51; 5v; Lv2-16; Day-0; P0 L2 |
+| 2 | Cleanse | holy, instant, short, support | cleanse, CD10 | R#56; 7v; Lv2-34; same tags as #47 |
+| 5 | Heal Zone | holy, ground, short, support | heal ~80%/t zone, CD15 | R#48; 8v; Lv5-34 |
+| 5 | Resurrect | holy, instant, short, support | rez 100%, CD60 | R#50; 6v; Lv5-50; same tags as #47 |
+| 16 | Regen | holy, aura, self, sustain, support | HoT ~30%/2s x5, CD15 | R#49; 7v; Lv16-34 |
 
-- Lv16-30 (17)
+- **Lv1 Heal** (R#47) — heal ~120%, CD10. variants Lv1-33. Day-0 arrival pool. P0 L1. same tags as #50/#56/#59; point-heal.
+  - RO: Acolyte: Heal; Super Novice: Heal; Priest: Highness Heal; Arch Bishop: Heal
+  - ToS: Cleric-Cleric: Cure; Cleric-Cleric: Heal; Cleric-Priest: Heal; Cleric-Priest: Mass Heal; Cleric-Priest: Revive; Cleric-Chaplain: Deploy Capella
+- **Lv2 Barrier** (R#51) — block 3 hits, CD14. variants Lv2-16. Day-0 arrival pool. P0 L2.
+  - RO: Mage: Safety Wall
+  - ToS: Cleric-Priest: Stone Skin; Cleric-Dievdirbys: Statue of Goddess Zemyna; Cleric-Paladin: Barrier; Cleric-Paladin: Sanctuary
+- **Lv2 Cleanse** (R#56) — cleanse, CD10. variants Lv2-34. same tags as #47; cure purpose, no HP restore.
+  - RO: Acolyte: Cure; Arch Bishop: Lauda Ramus; Royal Guard: King's Grace; Arch Bishop: Lauda Agnus
+  - ToS: Cleric-Priest: Cure; Cleric-Pardoner: Indulgentia; Cleric-Plague Doctor: Fumigate
+- **Lv5 Heal Zone** (R#48) — heal ~80%/t zone, CD15. variants Lv5-34.
+  - RO: Priest: Sanctuary; Arch Bishop: Coluceo Heal; Arch Bishop: Highness Heal; Arch Bishop: Clearance; Arch Bishop: Epiclesis
+  - ToS: Cleric-Priest: Healing Factor; Cleric-Dievdirbys: Statue of Goddess Ausrine; Cleric-Miko: Clap
+- **Lv5 Resurrect** (R#50) — rez 100%, CD60. variants Lv5-50. same tags as #47; rez purpose (Kaizel auto-rez variant).
+  - RO: Soul Linker: Kaizel; Priest: Resurrection; Arch Bishop: Resurrection; Spirit Handler: Spirit rebirth
+  - ToS: Cleric-Priest: Resurrection; Cleric-Kabbalist: R7x
+- **Lv16 Regen** (R#49) — HoT ~30%/2s x5, CD15. variants Lv16-34.
+  - RO: Summoner: Fresh Shrimp; Royal Guard: Inspiration; Arch Bishop: Renovatio
+  - ToS: Cleric-Druid: Sterea Trofh; Cleric-Kabbalist: Ein Sof; Cleric-Plague Doctor: Beak Mask; Cleric-Plague Doctor: Healing Factor
 
-| Lv | Skill | Tags | Calc | Notes |
+### Holy - Ward
+
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 16 | Cleric-Chaplain: Deploy Capella | holy,ins,shr,sup | heal ~120%, CD10 | R#47 point heal |
-| 16 | Cleric-Dievdirbys: Statue of Goddess Ausrine | holy,grd,shr,sup | heal ~80%/t zone, CD15 | R#48 heal zone |
-| 16 | Cleric-Dievdirbys: Statue of Goddess Zemyna | holy,ins,self,def | +SP regen, CD20 | R#51 SP statue |
-| 16 | Cleric-Druid: Sterea Trofh | holy,aura,self,sus,sup | invuln regen, CD60 | R#49 invuln |
-| 16 | Cleric-Kabbalist: Ein Sof | holy,aura,self,sus,sup | +maxHP regen, CD20 | R#49 max-HP |
-| 16 | Cleric-Kabbalist: R7x | holy,ins,shr,sup | rez 100%, CD60 | R#50 rez |
-| 16 | Cleric-Miko: Clap | holy,grd,shr,sup | heal ~80%/t zone, CD15 | R#48 heal zone |
-| 16 | Cleric-Paladin: Barrier | holy,ins,self,def | magic wall, CD18 | R#51 barrier |
-| 16 | Cleric-Paladin: Sanctuary | holy,ins,self,def | block 3 hits, CD14 | R#51 ward |
-| 16 | Cleric-Pardoner: Indulgentia | holy,ins,shr,sup | cleanse, CD10 | R#56 cure |
-| 16 | Cleric-Plague Doctor: Beak Mask | holy,aura,self,sus,sup | HoT ~30%/2s x5, CD15 | R#49 HoT |
-| 16 | Cleric-Plague Doctor: Fumigate | holy,ins,shr,sup | cleanse, CD10 | R#56 cure |
-| 16 | Cleric-Plague Doctor: Healing Factor | holy,aura,self,sus,sup | HoT, CD15 | R#49 HoT |
-| 16 | Summoner: Fresh Shrimp | holy,aura,self,sus,sup | HoT ~30%/2s x5, CD15 | R#49 HoT |
-| 17 | Priest: Sanctuary | holy,grd,shr,sup | heal ~80%/t, CD15 | R#48 heals + hits undead |
-| 18 | Priest: Resurrection | holy,ins,shr,sup | rez 100%, CD60 | R#50 rez |
-| 30 | Arch Bishop: Coluceo Heal | holy,grd,shr,sup | heal ~80%/t zone, CD15 | R#48 heal zone |
+| 1 | Bubble | holy, instant, self, defense | immune 3s, CD60 | R#77; 4v; Lv1-37 |
+| 1 | DEF Aura | holy, aura, self, support | +DEF aura, CD20 | R#53; 8v; Lv1-17 |
+| 5 | Bless | holy, instant, short, support | +stats buff, CD15 | R#59; 5v; Lv5-31; same tags as #47 |
+| 16 | Bodyguard | holy, instant, short, defense | redirect ally, CD20 | R#60; 3v; Lv16-32 |
 
-- Lv31-50 (11)
+- **Lv1 Bubble** (R#77) — immune 3s, CD60. variants Lv1-37.
+  - RO: Sura: Gentle Touch-Revitalize
+  - ToS: Swordsman-Swordsman: Pain Barrier; Cleric-Monk: Golden Bell Shield; Cleric-Monk: Iron Skin
+- **Lv1 DEF Aura** (R#53) — +DEF aura, CD20. variants Lv1-17.
+  - RO: Acolyte: Angelus; Priest: Kyrie Eleison; Crusader: Guard; Crusader: Defender; Priest: Assumptio
+  - ToS: Swordsman-Swordsman: Bear; Cleric-Paladin: Resist Elements; Swordsman-Rodelero: Slithering
+- **Lv5 Bless** (R#59) — +stats buff, CD15. variants Lv5-31. same tags as #47; stat-buff purpose, no HP restore.
+  - RO: Acolyte: Increase AGI
+  - ToS: Cleric-Miko: Kagura; Scout-Thaumaturge: Shrink Body; Scout-Thaumaturge: Swell Body/Hands/Left Arm/Right Arm; Archer-Hwarang: chant buffs
+- **Lv16 Bodyguard** (R#60) — redirect ally, CD20. variants Lv16-32.
+  - RO: Mechanic: Magnetic Field
+  - ToS: Scout-Squire: Arrest; Swordsman-Templar: Non-Invasive Area
 
-| Lv | Skill | Tags | Calc | Notes |
+### Frost bolts (walls see Control-Freeze #9)
+
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 31 | Arch Bishop: Highness Heal | holy,grd,shr,sup | heal ~150%, CD12 | R#48 big heal |
-| 31 | Royal Guard: Inspiration | holy,aura,self,sus,sup | HoT ~30%/2s x5, CD15 | R#49 HoT |
-| 32 | Arch Bishop: Clearance | holy,grd,shr,sup | cleanse, CD10 | R#48 cleanse |
-| 33 | Arch Bishop: Heal | holy,ins,shr,sup | heal ~120%, CD10 | R#47 point heal |
-| 33 | Arch Bishop: Lauda Ramus | holy,ins,shr,sup | cleanse, CD10 | R#56 cure |
-| 33 | Royal Guard: King's Grace | holy,ins,shr,sup | cleanse, CD10 | R#56 cure |
-| 34 | Arch Bishop: Epiclesis | holy,grd,shr,sup | heal zone + SP, CD20 | R#48 heal + battery |
-| 34 | Arch Bishop: Lauda Agnus | holy,ins,shr,sup | cleanse, CD10 | R#56 cure |
-| 34 | Arch Bishop: Renovatio | holy,aura,self,sus,sup | HoT ~30%/2s, CD15 | R#49 HoT |
-| 38 | Arch Bishop: Resurrection | holy,ins,shr,sup | rez 100%, CD60 | R#50 rez |
-| 50 | Spirit Handler: Spirit rebirth | holy,ins,shr,sup | rez 100%, CD60 | R#50 rez |
+| 1 | Cold Bolt | frost, projectile, long, burst | ~150%x1, CD4, 12MP | R#6; 7v; Lv1-40 |
+| 1 | Frost Nova | frost, nova, short, burst, freeze | ~110% AoE, CD9 + chill | R#7; 9v; Lv1-48; Day-0; P0 L1 |
+| 5 | Ice Lane | frost, projectile, short, burst, freeze | ~130% line, CD8 + frz | R#8; 6v; Lv5-45 |
 
-#### Ward
+- **Lv1 Cold Bolt** (R#6) — ~150%x1, CD4, 12MP. variants Lv1-40.
+  - RO: Super Novice: Cold Bolt; Mage: Cold Bolt; Warlock: Jack Frost; Warlock: Summon Water Ball
+  - ToS: Wizard-Cryomancer: Ice Bolt; Wizard-Elementalist: Hail; Wizard-Onmyoji: Water Shikigami
+- **Lv1 Frost Nova** (R#7) — ~110% AoE, CD9 + chill. variants Lv1-48. Day-0 arrival pool. P0 L1.
+  - RO: Wizard: Frost Nova; Wizard: Storm Gust; Warlock: Frost Misty; Arch Mage: Frozen Slash; Arch Mage: Rain of Crystal
+  - ToS: Wizard-Cryomancer: Ice Blast; Wizard-Cryomancer: Snow Rolling; Wizard-Elementalist: Frost Cloud; Wizard-Keraunos: Blizzard Drive
+- **Lv5 Ice Lane** (R#8) — ~130% line, CD8 + frz. variants Lv5-45.
+  - RO: Wizard: Water Ball; Sorcerer: Varetyr Spear; Arch Mage: Crystal Impact
+  - ToS: Wizard-Cryomancer: Ice Pike; Wizard-Rune Caster: Rune of Ice; Wizard-Taoist: reduced-lane charms
 
-| Lv | Skill | Tags | Calc | Notes |
+### Nature (heals see Holy-Heal)
+
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Swordsman-Swordsman: Bear | holy,aura,self,sup | +DEF aura, CD20 | R#53 DEF buff |
-| 1 | Swordsman-Swordsman: Pain Barrier | holy,ins,self,def | immune flinch, CD30 | R#77 anti-flinch |
-| 2 | Acolyte: Angelus | holy,aura,self,sup | +DEF aura, CD20 | R#53 DEF buff |
-| 5 | Acolyte: Increase AGI | holy,ins,shr,sup | +AGI/move, CD15 | R#59 agi buff |
-| 10 | Priest: Kyrie Eleison | holy,aura,self,sup | hit barrier, CD18 | R#53 hit barrier |
-| 13 | Crusader: Guard | holy,aura,self,sup | +DEF aura, CD20 | R#53 DEF buff |
-| 14 | Crusader: Defender | holy,aura,self,sup | +DEF aura, CD20 | R#53 DEF buff |
-| 16 | Cleric-Miko: Kagura | holy,ins,shr,sup | +stats buff, CD15 | R#59 bless |
-| 16 | Cleric-Monk: Golden Bell Shield | holy,ins,self,def | immune 3s, CD60 | R#77 oh-shit |
-| 16 | Cleric-Monk: Iron Skin | holy,ins,self,def | immune 3s, CD60 | R#77 oh-shit |
-| 16 | Cleric-Paladin: Resist Elements | holy,aura,self,sup | +DEF aura, CD20 | R#53 DEF buff |
-| 16 | Scout-Squire: Arrest | holy,ins,shr,def | redirect ally, CD20 | R#60 bodyguard |
-| 16 | Scout-Thaumaturge: Shrink Body | holy,ins,shr,sup | +stats buff, CD15 | R#59 bless |
-| 16 | Scout-Thaumaturge: Swell Body/Hands/Left Ar~ | holy,ins,shr,sup | +stats buff, CD15 | R#59 bless |
-| 16 | Swordsman-Rodelero: Slithering | holy,aura,self,sup | +DEF aura, CD20 | R#53 DEF buff |
-| 16 | Swordsman-Templar: Non-Invasive Area | holy,ins,shr,def | redirect ally, CD20 | R#60 bodyguard |
-| 17 | Priest: Assumptio | holy,aura,self,sup | hard DEF, CD25 | R#53 hard mit |
-| 31 | Archer-Hwarang: chant buffs | holy,ins,shr,sup | +stats buff, CD15 | R#59 bless |
-| 32 | Mechanic: Magnetic Field | holy,ins,shr,def | redirect ally, CD20 | R#60 bodyguard |
-| 37 | Sura: Gentle Touch-Revitalize | holy,ins,self,def | immune 3s, CD60 | R#77 oh-shit |
+| 16 | Plant | nature, minion, short, summon | plant/ward, CD15 | R#67; 4v; Lv16-35 |
+| 16 | Tame | nature, instant, short, control, charm | tame/charm, CD20 | R#70; 5v; Lv16-20 |
 
-### Nature
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 16 | Cleric-Dievdirbys: Carve Owl/Laima/Austras | nature,min,shr,sum | plant/ward, CD15 | R#67 rooted |
-| 16 | Cleric-Druid: Carnivory | nature,min,shr,sum | plant/ward, CD15 | R#67 rooted |
-| 16 | Cleric-Druid: Chortasmata | nature,min,shr,sum | plant/ward, CD15 | R#67 rooted |
-| 16 | Cleric-Druid: Henge Stone | nature,ins,shr,ctl,chm | tame/charm, CD20 | R#70 tame |
-| 16 | Cleric-Druid: Telepath | nature,ins,shr,ctl,chm | tame/charm, CD20 | R#70 tame |
-| 16 | Scout-Rogue: Capturing | nature,ins,shr,ctl,chm | tame/charm, CD20 | R#70 tame |
-| 17 | Summoner: Spirit Communication | nature,ins,shr,ctl,chm | tame/charm, CD20 | R#70 tame |
-| 20 | Sage: Hocus Pocus | nature,ins,shr,ctl,chm | tame/charm, CD20 | R#70 tame |
-| 35 | Sorcerer: Spirit Control | nature,min,shr,sum | plant/ward, CD15 | R#67 rooted |
+- **Lv16 Plant** (R#67) — plant/ward, CD15. variants Lv16-35.
+  - RO: Sorcerer: Spirit Control
+  - ToS: Cleric-Dievdirbys: Carve Owl/Laima/Austras; Cleric-Druid: Carnivory; Cleric-Druid: Chortasmata
+- **Lv16 Tame** (R#70) — tame/charm, CD20. variants Lv16-20.
+  - RO: Summoner: Spirit Communication; Sage: Hocus Pocus
+  - ToS: Cleric-Druid: Henge Stone; Cleric-Druid: Telepath; Scout-Rogue: Capturing
 
 ### Summon
 
-- Lv1-5 (7)
-
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 3 | Archer-Sapper: Spike Shooter | phys,trap,shr,sum | turret ~60%/2s, CD18 | R#64 Day-0 + static DPS |
-| 5 | Archer-Hunter: Growling | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 5 | Archer-Hunter: Hounding | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 5 | Archer-Hunter: Praise | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 5 | Archer-Hunter: Retrieve | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 5 | Archer-Hunter: Rush Dog | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 5 | Archer-Quarrel Shooter: Deploy Pavise | phys,trap,shr,sum | turret ~60%/2s, CD18 | R#64 static DPS |
+| 3 | Turret | physical, trap, short, summon | turret ~60%/2s, CD18 | R#64; 5v; Lv3-48; P0 L3 |
+| 5 | Beast Companion | physical, minion, long, summon | beast pet, CD20 | R#66; 20v; Lv5-33 |
+| 10 | Swarm Pet | physical, minion, short, summon | pet x3 melee, CD20 | R#61; 8v; Lv10-25 |
+| 10 | Trap Field | physical, trap, short, dot | trap ~60%/t, CD12 | R#65; 11v; Lv10-38 |
+| 11 | Tank Pet | physical, minion, close, summon, defense | tank pet, CD25 | R#63; 5v; Lv11-16 |
+| 14 | Clone | arcane, minion, self, summon | clone 10s, CD30 | R#68; 5v; Lv14-48 |
+| 16 | Caster Pet | arcane, minion, long, summon | pet ranged, CD20 | R#62; 7v; Lv16-35 |
 
-- Lv6-15 (13)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 10 | Alchemist: Call Homunculus | phys,min,shr,sum | pet loyal, CD25 | R#61 loyalty pet |
-| 10 | Hunter: Claymore Trap | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 10 | Summoner: Spirit summons | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 11 | Hunter: Blast Mine | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 11 | Hunter: Sandman | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 11 | Hunter: Shockwave Trap | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 11 | Summoner: Arclouse Dash | phys,min,cls,sum,def | tank pet, CD25 | R#63 meat wall |
-| 12 | Alchemist: Homunculus Amistr | phys,min,cls,sum,def | tank pet, CD25 | R#63 meat wall |
-| 12 | Summoner: Doram Spirit summons | phys,min,shr,sum | pet x3 melee, CD20 | R#61 swarm |
-| 13 | Hunter: Blitz Beat | phys,min,long,sum | ~120% falcon, CD5 | R#66 falcon strike |
-| 13 | Hunter: Land Mine | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 14 | Ninja: Mirror Image | arcane,min,self,sum | clone 10s, CD30 | R#68 echo |
-| 15 | Hunter: Talkie Box | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-
-- Lv16-30 (31)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 16 | Archer-Falconer: Call | phys,min,long,sum | hawk pet, CD20 | R#66 hawk |
-| 16 | Archer-Falconer: Call + Hanging Shot | arcane,min,long,sum | pet ranged, CD20 | R#62 caster pet |
-| 16 | Archer-Falconer: Circling | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 16 | Archer-Falconer: Hanging Shot | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 16 | Archer-Falconer: Hovering | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 16 | Archer-Falconer: Pheasant | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 16 | Archer-Falconer: Pre-Emptive Strike | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 16 | Archer-Falconer: Roost | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 16 | Archer-Falconer: Sonic Strike | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 16 | Archer-Sapper: Broom Trap | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 16 | Archer-Sapper: Claymore | phys,trap,shr,sum | turret ~60%/2s, CD18 | R#64 static DPS |
-| 16 | Archer-Sapper: Conceal | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 16 | Archer-Sapper: Punji Stake | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 16 | Cleric-Dievdirbys: Carve Owl | phys,min,cls,sum,def | tank pet, CD25 | R#63 meat wall |
-| 16 | Scout-Shinobi: Bunshin no Jutsu | arcane,min,self,sum | clone 10s, CD30 | R#68 echo |
-| 16 | Swordsman-Doppelsoeldner: Deeds of Valor | arcane,min,self,sum | clone 10s, CD30 | R#68 echo |
-| 16 | Wizard-Bokor: Bwa Kayiman | phys,min,shr,sum | pet x3 melee, CD20 | R#61 swarm |
-| 16 | Wizard-Necromancer: Corpse Tower | phys,min,cls,sum,def | wall-minion, CD25 | R#63 wall-minion |
-| 16 | Wizard-Necromancer: Create Shoggoth | phys,min,shr,sum | pet x3 melee, CD20 | R#61 swarm |
-| 16 | Wizard-Necromancer: Raise Dead | phys,min,shr,sum | skeletons x4, CD25 | R#61 chaff swarm |
-| 16 | Wizard-Necromancer: Raise Skull Archer | arcane,min,long,sum | pet ranged, CD20 | R#62 caster pet |
-| 16 | Wizard-Necromancer: Raise Skull Mage | arcane,min,long,sum | pet ranged, CD20 | R#62 caster pet |
-| 16 | Wizard-Necromancer: Raise Skull Swordsman | phys,min,cls,sum,def | tank pet, CD25 | R#63 meat wall |
-| 16 | Wizard-Sorcerer: Morph | arcane,min,long,sum | pet ranged, CD20 | R#62 caster pet |
-| 16 | Wizard-Sorcerer: Summon Familiar | arcane,min,long,sum | pet ranged, CD20 | R#62 caster pet |
-| 16 | Wizard-Sorcerer: Summon Salamion | phys,min,shr,sum | pet x3 melee, CD20 | R#61 swarm |
-| 16 | Wizard-Sorcerer: Summon Servant | phys,min,shr,sum | pet x3 melee, CD20 | R#61 swarm |
-| 17 | Alchemist: Homunculus | arcane,min,long,sum | pet ranged, CD20 | R#62 caster pet |
-| 18 | Hunter: Falcon Eyes | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 25 | Biochemist: Homunculus skills | phys,min,shr,sum | pet x3 melee, CD20 | R#61 swarm |
-| 25 | Sniper: Falcon Assault | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-
-- Lv31-50 (10)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 31 | Ranger: Warg Dash | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 31 | Ranger: Warg Strike | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 33 | Ranger: Tooth of Warg | phys,min,long,sum | beast pet, CD20 | R#66 beast |
-| 35 | Kagerou: Empty Shadow | arcane,min,self,sum | clone 10s, CD30 | R#68 echo |
-| 35 | Rebellion: Anti-Material Blast | phys,trap,shr,sum | turret ~60%/2s, CD18 | R#64 static DPS |
-| 35 | Sorcerer: Summon Aqua/Fire/Wind/Earth | arcane,min,long,sum | pet ranged, CD20 | R#62 caster pet |
-| 37 | Genetic: Bloodsucker Plant | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 38 | Ranger: Detonator | phys,trap,shr,dot | trap ~60%/t, CD12 | R#65 minefield |
-| 48 | Night Watch: Frontier deployments | phys,trap,shr,sum | turret ~60%/2s, CD18 | R#64 static DPS |
-| 48 | Shiranui: Soul Veil | arcane,min,self,sum | clone 10s, CD30 | R#68 echo |
+- **Lv3 Turret** (R#64) — turret ~60%/2s, CD18. variants Lv3-48. P0 L3; Lv3 gate, not Day-0 pool.
+  - RO: Rebellion: Anti-Material Blast; Night Watch: Frontier deployments
+  - ToS: Archer-Sapper: Spike Shooter; Archer-Quarrel Shooter: Deploy Pavise; Archer-Sapper: Claymore
+- **Lv5 Beast Companion** (R#66) — beast pet, CD20. variants Lv5-33.
+  - RO: Summoner: Spirit summons; Hunter: Blitz Beat; Hunter: Falcon Eyes; Sniper: Falcon Assault; Ranger: Warg Dash; Ranger: Warg Strike; Ranger: Tooth of Warg
+  - ToS: Archer-Hunter: Growling; Archer-Hunter: Hounding; Archer-Hunter: Praise; Archer-Hunter: Retrieve; Archer-Hunter: Rush Dog; Archer-Falconer: Call
+  + Archer-Falconer: Circling; Archer-Falconer: Hanging Shot; Archer-Falconer: Hovering; Archer-Falconer: Pheasant; Archer-Falconer: Pre-Emptive Strike
+  + Archer-Falconer: Roost; Archer-Falconer: Sonic Strike
+- **Lv10 Swarm Pet** (R#61) — pet x3 melee, CD20. variants Lv10-25.
+  - RO: Alchemist: Call Homunculus; Summoner: Doram Spirit summons; Biochemist: Homunculus skills
+  - ToS: Wizard-Bokor: Bwa Kayiman; Wizard-Necromancer: Create Shoggoth; Wizard-Necromancer: Raise Dead; Wizard-Sorcerer: Summon Salamion; Wizard-Sorcerer: Summon Servant
+- **Lv10 Trap Field** (R#65) — trap ~60%/t, CD12. variants Lv10-38.
+  - RO: Hunter: Claymore Trap; Hunter: Blast Mine; Hunter: Sandman; Hunter: Shockwave Trap; Hunter: Land Mine; Hunter: Talkie Box; Genetic: Bloodsucker Plant
+  + Ranger: Detonator
+  - ToS: Archer-Sapper: Broom Trap; Archer-Sapper: Conceal; Archer-Sapper: Punji Stake
+- **Lv11 Tank Pet** (R#63) — tank pet, CD25. variants Lv11-16.
+  - RO: Summoner: Arclouse Dash; Alchemist: Homunculus Amistr
+  - ToS: Cleric-Dievdirbys: Carve Owl; Wizard-Necromancer: Corpse Tower; Wizard-Necromancer: Raise Skull Swordsman
+- **Lv14 Clone** (R#68) — clone 10s, CD30. variants Lv14-48.
+  - RO: Ninja: Mirror Image; Kagerou: Empty Shadow; Shiranui: Soul Veil
+  - ToS: Scout-Shinobi: Bunshin no Jutsu; Swordsman-Doppelsoeldner: Deeds of Valor
+- **Lv16 Caster Pet** (R#62) — pet ranged, CD20. variants Lv16-35.
+  - RO: Alchemist: Homunculus; Sorcerer: Summon Aqua/Fire/Wind/Earth
+  - ToS: Archer-Falconer: Call + Hanging Shot; Wizard-Necromancer: Raise Skull Archer; Wizard-Necromancer: Raise Skull Mage; Wizard-Sorcerer: Morph
+  + Wizard-Sorcerer: Summon Familiar
 
 ## 3. Physical
 
 ### Single
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Swordsman-Swordsman: Bash | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 1 | Swordsman-Swordsman: Thrust | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 2 | Mage: Stone Curse | phys,proj,long,bst | ~60% + petrify, CD15 | R#12 red gem cost |
-| 2 | Monk: Triple Attack | phys,mel,cls,bst | ~150%x1, CD4 | R#20 P0 L2 + weapon hit |
-| 5 | Swordman: Bash | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 5 | Swordsman-Barbarian: Frenzy | phys,nova,cls,bst | ~250% self 10%, CD20 | R#30 risk meter |
-| 5 | Swordsman-Highlander: Cartar Stroke | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 5 | Swordsman-Highlander: Skull Swing | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 14 | Wizard: Earth Spike | phys,proj,long,bst | ~90%x5, CD5 | R#12 up to 5 hits |
-| 15 | Knight: Pierce | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Knight: Brandish Spear | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Scout-Shinobi: Mijin no Jutsu | phys,nova,cls,bst | ~250% self 10%, CD20 | R#30 risk meter |
-| 16 | Swordsman-Fencer: Attaque Composee | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Swordsman-Fencer: Lunge | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Swordsman-Fencer: Sept Etoiles | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Swordsman-Luchador: self-slam | phys,nova,cls,bst | ~250% self 10%, CD20 | R#30 risk meter |
-| 16 | Swordsman-Monk (Cleric): Double Punch | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Swordsman-Monk (Cleric): God Finger Flick | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Swordsman-Monk (Cleric): One Inch Punch | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Swordsman-Monk (Cleric): Palm Strike | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 16 | Swordsman-Murmillo: Headbutt | phys,proj,long,bst | ~140%x1, CD5 | R#12 earth-as-phys |
-| 16 | Wizard-Sage: Micro Dimension | phys,proj,long,bst | ~140%x1, CD5 | R#12 earth-as-phys |
-| 17 | Assassin: Sonic Blow | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 17 | Monk: Occult Impaction | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 25 | Champion: Guillotine Fist | phys,mel,cls,bst | ~400% SP-gated, CD10 | R#20 SP-gated nuke |
-| 31 | Mechanic: Self Destruction | phys,nova,cls,bst | ~250% self 10%, CD20 | R#30 risk meter |
-| 31 | Swordsman-Nak Muay: straight/hook strikes | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 31 | Wizard-Terramancer: Earthen Prison | phys,proj,long,bst | ~140%x1, CD5 | R#12 earth-as-phys |
-| 31 | Wizard-Terramancer: Stone Spike | phys,proj,long,bst | ~140%x1, CD5 | R#12 earth-as-phys |
-| 32 | Sorcerer: Diamond Dust | phys,proj,long,bst | ~140%x1, CD5 | R#12 earth-as-phys |
-| 36 | Guillotine Cross: Cross Ripper Slasher | phys,mel,cls,bst | ~150%x1, CD4 | R#20 weapon hit |
-| 45 | Elemental Master: Elemental Buster | phys,proj,long,bst | ~140%x1, CD5 | R#12 earth-as-phys |
-| 46 | Hyper Novice: Self-Destruction | phys,nova,cls,bst | ~250% self 10%, CD20 | R#30 risk meter |
+| 1 | Weapon Hit | physical, melee, close, burst | ~150%x1, CD4 | R#20; 20v; Lv1-36; non-P0, see P0 #26 glue |
+| 2 | Stone Shot | physical, projectile, long, burst | ~140%x1, CD5 | R#12; 8v; Lv2-45; earth-as-physical |
+| 5 | Kamikaze | physical, nova, close, burst | ~250% self 10%, CD20 | R#30; 5v; Lv5-46 |
+
+- **Lv1 Weapon Hit** (R#20) — ~150%x1, CD4. variants Lv1-36. non-P0 base hit; P0 glue is #26 shield_slam.
+  - RO: Monk: Triple Attack; Swordman: Bash; Knight: Pierce; Knight: Brandish Spear; Assassin: Sonic Blow; Monk: Occult Impaction; Champion: Guillotine Fist
+  + Guillotine Cross: Cross Ripper Slasher
+  - ToS: Swordsman-Swordsman: Bash; Swordsman-Swordsman: Thrust; Swordsman-Highlander: Cartar Stroke; Swordsman-Highlander: Skull Swing; Swordsman-Fencer: Attaque Composee
+  + Swordsman-Fencer: Lunge; Swordsman-Fencer: Sept Etoiles; Swordsman-Monk (Cleric): Double Punch; Swordsman-Monk (Cleric): God Finger Flick
+  + Swordsman-Monk (Cleric): One Inch Punch; Swordsman-Monk (Cleric): Palm Strike; Swordsman-Nak Muay: straight/hook strikes
+- **Lv2 Stone Shot** (R#12) — ~140%x1, CD5. variants Lv2-45. earth-as-physical; Stone Curse petrify + gem variant.
+  - RO: Mage: Stone Curse; Wizard: Earth Spike; Sorcerer: Diamond Dust; Elemental Master: Elemental Buster
+  - ToS: Swordsman-Murmillo: Headbutt; Wizard-Sage: Micro Dimension; Wizard-Terramancer: Earthen Prison; Wizard-Terramancer: Stone Spike
+- **Lv5 Kamikaze** (R#30) — ~250% self 10%, CD20. variants Lv5-46.
+  - RO: Mechanic: Self Destruction; Hyper Novice: Self-Destruction
+  - ToS: Swordsman-Barbarian: Frenzy; Scout-Shinobi: Mijin no Jutsu; Swordsman-Luchador: self-slam
 
 ### Area
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Swordsman-Barbarian: Cleave | phys,mel,cls,sus | ~100% arc, CD5 | R#21 Day-0 + cleave |
-| 5 | Swordman: Magnum Break | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 5 | Swordsman-Barbarian: Aggressor | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 5 | Swordsman-Barbarian: Seism | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 5 | Swordsman-Barbarian: Stomping Kick | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 5 | Swordsman-Highlander: Cross Cut | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 5 | Swordsman-Highlander: Moulinet | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 11 | Knight: Bowling Bash | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 12 | Wizard: Heaven's Drive | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 16 | Swordsman-Blossom Blader: sweep skills | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 16 | Swordsman-Doppelsoeldner: Cyclone | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 16 | Swordsman-Doppelsoeldner: Punish | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 16 | Swordsman-Doppelsoeldner: Redel | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 16 | Swordsman-Doppelsoeldner: Zornhau | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 16 | Swordsman-Hackapell: Skarphuggning | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 16 | Wizard-Elementalist: Stone Rain | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 31 | Warlock: Sienna Execrate | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 31 | Wizard-Terramancer: Earthquake | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 31 | Wizard-Terramancer: Rolling Stone | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 33 | Royal Guard: Genesis Ray | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 39 | Rune Knight: Storm Blast | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 40 | Rune Knight: Dragon Breath | phys,mel,cls,sus | ~100% arc, CD5 | R#21 cleave |
-| 48 | Arch Mage: Rock Down | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 49 | Arch Mage: Violent Quake | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
-| 50 | Arch Mage: Stratum Tremor | phys,grd,shr,bst | ~120% AoE, CD10 | R#13 quake |
+| 1 | Cleave | physical, melee, close, sustain | ~100% arc, CD5 | R#21; 15v; Lv1-40; Day-0; P0 L1 |
+| 5 | Quake | physical, ground, short, burst | ~120% AoE, CD10 | R#13; 10v; Lv5-50 |
+
+- **Lv1 Cleave** (R#21) — ~100% arc, CD5. variants Lv1-40. Day-0 arrival pool. P0 L1.
+  - RO: Swordman: Magnum Break; Knight: Bowling Bash; Royal Guard: Genesis Ray; Rune Knight: Storm Blast; Rune Knight: Dragon Breath
+  - ToS: Swordsman-Barbarian: Cleave; Swordsman-Barbarian: Aggressor; Swordsman-Highlander: Cross Cut; Swordsman-Highlander: Moulinet
+  + Swordsman-Blossom Blader: sweep skills; Swordsman-Doppelsoeldner: Cyclone; Swordsman-Doppelsoeldner: Punish; Swordsman-Doppelsoeldner: Redel
+  + Swordsman-Doppelsoeldner: Zornhau; Swordsman-Hackapell: Skarphuggning
+- **Lv5 Quake** (R#13) — ~120% AoE, CD10. variants Lv5-50.
+  - RO: Wizard: Heaven's Drive; Warlock: Sienna Execrate; Arch Mage: Rock Down; Arch Mage: Violent Quake; Arch Mage: Stratum Tremor
+  - ToS: Swordsman-Barbarian: Seism; Swordsman-Barbarian: Stomping Kick; Wizard-Elementalist: Stone Rain; Wizard-Terramancer: Earthquake; Wizard-Terramancer: Rolling Stone
 
 ### Ranged
 
-- Lv1-5 (10)
-
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Archer-Archer: Multi Shot | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 1 | Archer-Archer: Oblique Shot | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 1 | Archer-Archer: Twin Arrow | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 2 | Archer: Arrow Shower | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 3 | Archer: Double Strafe | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 5 | Archer-Ranger: Arrow Shower | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 5 | Archer-Ranger: Bounce Shot | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 5 | Archer-Ranger: Critical Shot | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 5 | Archer-Ranger: Spiral Arrow | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 5 | Archer-Ranger: Steady Aim | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
+| 1 | Aimed Shot | physical, projectile, long, burst | ~150%x1, CD4 | R#22; 13v; Lv1-39; same tags as #24 |
+| 1 | Volley | physical, projectile, long, sustain | ~70%x3, CD8 | R#23; 14v; Lv1-38 |
+| 10 | Firearm Shot | physical, projectile, long, burst | ~130%x1, CD5 | R#24; 19v; Lv10-47; same tags as #22 |
 
-- Lv6-15 (5)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 10 | Gunslinger: Wounding Shot | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 12 | Gunslinger: Disarm | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 13 | Gunslinger: Rapid Shower | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 14 | Gunslinger: Tracking | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 15 | Gunslinger: Spread Attack | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-
-- Lv16-30 (20)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 16 | Archer-Cannoneer: Bazooka | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 16 | Archer-Cannoneer: Cannon Barrage | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 16 | Archer-Cannoneer: Shootdown | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 16 | Archer-Mergen: Homing Arrow | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 16 | Archer-Mergen: Spread Shot | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 16 | Archer-Mergen: Triple Arrow | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 16 | Archer-Mergen: Zenith | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 16 | Archer-Musketeer: Birdfall | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 16 | Archer-Musketeer: Butt Stroke | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 16 | Archer-Musketeer: Covering Fire | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 16 | Archer-Musketeer: Headshot | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 16 | Archer-Musketeer: Snipe | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 16 | Scout-Bullet Marker: full kit | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 16 | Scout-Bullet Marker: Smash Bullet | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 16 | Scout-Bullet Marker: Tracer Bullet | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 16 | Scout-Outlaw: Mangle | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 17 | Gunslinger: Piercing Shot | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 25 | Sniper: Arrow Storm | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 25 | Sniper: Focused Arrow Strike | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 25 | Sniper: Wind Walk | phys,proj,long,sus | +move falcon, CD15 | R#23 falcon synergy |
-
-- Lv31-50 (11)
-
-| Lv | Skill | Tags | Calc | Notes |
-|---|---|---|---|---|
-| 31 | Archer-Arquebusier: aimed shots | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 31 | Maestro: Severe Rainstorm | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 31 | Rebellion: God's Hammer | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 31 | Scout-Sheriff: fan-fire skills | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 34 | Rebellion: Fire Dance | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 37 | Rebellion: Howling Mine | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 38 | Ranger: Arrow Storm | phys,proj,long,sus | ~70%x3, CD8 | R#23 volley |
-| 38 | Rebellion: Round Trip | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 38 | Rebellion: Slug Shot | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
-| 39 | Ranger: Aimed Bolt | phys,proj,long,bst | ~150%x1, CD4 | R#22 aimed |
-| 47 | Night Watch: all firearms | phys,proj,long,bst | ~130%x1, CD5 | R#24 firearm |
+- **Lv1 Aimed Shot** (R#22) — ~150%x1, CD4. variants Lv1-39. same tags as #24; bow-aimed purpose, see #24 guns.
+  - RO: Archer: Double Strafe; Sniper: Focused Arrow Strike; Rebellion: Round Trip; Ranger: Aimed Bolt
+  - ToS: Archer-Archer: Oblique Shot; Archer-Archer: Twin Arrow; Archer-Ranger: Critical Shot; Archer-Ranger: Spiral Arrow; Archer-Musketeer: Headshot
+  + Archer-Musketeer: Snipe; Scout-Bullet Marker: Smash Bullet; Scout-Bullet Marker: Tracer Bullet; Archer-Arquebusier: aimed shots
+- **Lv1 Volley** (R#23) — ~70%x3, CD8. variants Lv1-38.
+  - RO: Archer: Arrow Shower; Sniper: Arrow Storm; Sniper: Wind Walk; Maestro: Severe Rainstorm; Ranger: Arrow Storm
+  - ToS: Archer-Archer: Multi Shot; Archer-Ranger: Arrow Shower; Archer-Ranger: Bounce Shot; Archer-Ranger: Steady Aim; Archer-Cannoneer: Shootdown
+  + Archer-Mergen: Homing Arrow; Archer-Mergen: Spread Shot; Archer-Mergen: Triple Arrow; Archer-Mergen: Zenith
+- **Lv10 Firearm Shot** (R#24) — ~130%x1, CD5. variants Lv10-47. same tags as #22; firearm purpose, see #22 bows.
+  - RO: Gunslinger: Wounding Shot; Gunslinger: Disarm; Gunslinger: Rapid Shower; Gunslinger: Tracking; Gunslinger: Spread Attack; Gunslinger: Piercing Shot
+  + Rebellion: God's Hammer; Rebellion: Fire Dance; Rebellion: Howling Mine; Rebellion: Slug Shot; Night Watch: all firearms
+  - ToS: Archer-Cannoneer: Bazooka; Archer-Cannoneer: Cannon Barrage; Archer-Musketeer: Birdfall; Archer-Musketeer: Butt Stroke; Archer-Musketeer: Covering Fire
+  + Scout-Bullet Marker: full kit; Scout-Outlaw: Mangle; Scout-Sheriff: fan-fire skills
 
 ### Bleed
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 5 | Swordsman-Highlander: Vertical Slash | phys,mel,cls,dot,bld | ~70% + bld 6s, CD6 | R#28 wound |
-| 31 | Scout-Ardito: bleed daggers | phys,mel,cls,dot,bld | ~70% + bld 6s, CD6 | R#28 wound |
-| 31 | Swordsman-Corsair: Dust Devil | phys,mel,cls,dot,bld | ~70% + bld 6s, CD6 | R#28 wound |
-| 31 | Swordsman-Lancer: Crush | phys,mel,cls,dot,bld | ~70% + bld 6s, CD6 | R#28 wound |
-| 47 | Abyss Chaser: Frenzy Shot | phys,mel,cls,dot,bld | ~70% + bld 6s, CD6 | R#28 wound |
+| 5 | Bleed Cut | physical, melee, close, dot, bleed | ~70% + bld 6s, CD6 | R#28; 5v; Lv5-47 |
+
+- **Lv5 Bleed Cut** (R#28) — ~70% + bld 6s, CD6. variants Lv5-47.
+  - RO: Abyss Chaser: Frenzy Shot
+  - ToS: Swordsman-Highlander: Vertical Slash; Scout-Ardito: bleed daggers; Swordsman-Corsair: Dust Devil; Swordsman-Lancer: Crush
 
 ### Execute
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 4 | Swordsman-Assassin: Behead | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 P0 L4 + finisher |
-| 16 | Cleric-Kabbalist: Clone | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 finisher |
-| 16 | Scout-Rogue: Backstab | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 finisher |
-| 20 | Assassin: Grimtooth | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 finisher |
-| 31 | Swordsman-Assassin: Annihilation | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 finisher |
-| 31 | Swordsman-Nak Muay: KO strike | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 finisher |
-| 32 | Guillotine Cross: Rolling Cutter | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 finisher |
-| 39 | Sura: Tiger Cannon | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 finisher |
-| 48 | Inquisitor: Oleum Sanctum | phys,mel,shr,bst,exe | ~100% x2<30%, CD6 | R#25 finisher |
+| 4 | Execute | physical, melee, short, burst, execute | ~100% x2<30%, CD6 | R#25; 9v; Lv4-48; P0 L4 + finisher |
+
+- **Lv4 Execute** (R#25) — ~100% x2<30%, CD6. variants Lv4-48. P0 L4 + finisher.
+  - RO: Assassin: Grimtooth; Guillotine Cross: Rolling Cutter; Sura: Tiger Cannon; Inquisitor: Oleum Sanctum
+  - ToS: Swordsman-Assassin: Behead; Cleric-Kabbalist: Clone; Scout-Rogue: Backstab; Swordsman-Assassin: Annihilation; Swordsman-Nak Muay: KO strike
 
 ### Combo
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 16 | Swordsman-Fencer: Epee Garde chains | phys,mel,cls,cmb,opn | ~80%, CD5 + opn | R#26 chain |
-| 16 | Swordsman-Monk: Double Punch → Palm Strike~ | phys,mel,cls,cmb,opn | ~80%, CD5 + opn | R#26 chain |
-| 18 | Monk: Chain Combo | phys,mel,cls,cmb,opn | ~80%, CD5 + opn | R#26 chain |
-| 25 | Star Emperor: Solar/Lunar/Stellar attacks | phys,mel,cls,cmb,opn | ~80%, CD5 + opn | R#26 chain |
-| 31 | Swordsman-Matador: Faena → Muleta → Corrida~ | phys,mel,cls,cmb,opn | ~80%, CD5 + opn | R#26 chain |
-| 31 | Swordsman-Nak Muay: combo strings | phys,mel,cls,cmb,opn | ~80%, CD5 + opn | R#26 chain |
-| 49 | Shinkiro/Shiranui: combo charms | phys,mel,cls,cmb,opn | ~80%, CD5 + opn | R#26 chain |
-| 49 | Sky Emperor: Celestial combo | phys,mel,cls,cmb,opn | ~80%, CD5 + opn | R#26 chain |
+| 16 | Combo Chain | physical, melee, close, combo, opener | ~80%, CD5 + opn | R#26; 8v; Lv16-49; P0 L2 glue (shield_slam) |
+
+- **Lv16 Combo Chain** (R#26) — ~80%, CD5 + opn. variants Lv16-49. P0 L2 glue (shield_slam_01; burst+opener).
+  - RO: Monk: Chain Combo; Star Emperor: Solar/Lunar/Stellar attacks; Shinkiro/Shiranui: combo charms; Sky Emperor: Celestial combo
+  - ToS: Swordsman-Fencer: Epee Garde chains; Swordsman-Monk: Double Punch → Palm Strike~; Swordsman-Matador: Faena → Muleta → Corrida~; Swordsman-Nak Muay: combo strings
 
 ### Counter
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 5 | Swordsman-Peltasta: Butterfly | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
-| 5 | Swordsman-Peltasta: Umbo Blow | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
-| 12 | Knight: Counter Attack | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
-| 16 | Swordsman-Fencer: Flanconnade | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
-| 16 | Swordsman-Murmillo: Scutum Hit | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
-| 16 | Swordsman-Rodelero: Shield Charge | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
-| 25 | Star Emperor: Solar Protection | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
-| 35 | Guillotine Cross: Weapon Blocking | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
-| 40 | Royal Guard: Shield Spell | phys,mel,cls,bst,brk | ~160% ripo, CD8 | R#29 riposte |
+| 5 | Riposte | physical, melee, close, burst, breaker | ~160% ripo, CD8 | R#29; 9v; Lv5-40 |
+
+- **Lv5 Riposte** (R#29) — ~160% ripo, CD8. variants Lv5-40.
+  - RO: Knight: Counter Attack; Star Emperor: Solar Protection; Guillotine Cross: Weapon Blocking; Royal Guard: Shield Spell
+  - ToS: Swordsman-Peltasta: Butterfly; Swordsman-Peltasta: Umbo Blow; Swordsman-Fencer: Flanconnade; Swordsman-Murmillo: Scutum Hit; Swordsman-Rodelero: Shield Charge
 
 ## 4. Control
 
 ### Freeze
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 4 | Mage: Frost Diver | frost,ins,shr,ctl,frz | ~70% + frz, CD12 | R#31 classic combo |
-| 5 | Archer-Quarrel Shooter: Scatter Caltrops | frost,grd,shr,ctl | slow 50% 6s, CD12 | R#41 slow |
-| 5 | Wizard-Cryomancer: Frost Pillar | frost,ins,shr,ctl,frz | ~90% + frz tree, CD14 | R#31 freeze tree |
-| 5 | Wizard-Cryomancer: Ice Wall | frost,grd,shr,ctl,def | wall 5 cells, CD15 | R#9 wall |
-| 5 | Wizard-Cryomancer: Subzero Shield | frost,grd,shr,ctl,def | wall 5 cells, CD15 | R#9 wall |
-| 11 | Wizard: Quagmire | frost,grd,shr,ctl | slow 50% 6s, CD12 | R#41 slow |
-| 16 | Scout-Linker: Spiritual Chain | frost,grd,shr,ctl | slow 50% 6s, CD12 | R#41 slow |
-| 16 | Wizard-Chronomancer: Slow | frost,grd,shr,ctl | slow 50%, CD12 | R#41 slow |
-| 16 | Wizard-Chronomancer: Stop | frost,grd,shr,ctl | lock 3s, CD30 | R#41 hard stop |
-| 16 | Wizard-Psychokino: Slow | frost,grd,shr,ctl | slow 50% 6s, CD12 | R#41 slow |
-| 16 | Wizard-Sage: Ice Wall | frost,grd,shr,ctl,def | wall 5 cells, CD15 | R#9 wall |
-| 20 | Wizard: Ice Wall | frost,grd,shr,ctl,def | wall 5 cells, CD15 | R#9 5-cell wall |
-| 34 | Warlock: Freezing Spell | frost,ins,shr,ctl,frz | ~70% + frz, CD12 | R#31 lockdown |
-| 49 | Arch Mage: Mystery Illusion | frost,grd,shr,ctl,def | wall 5 cells, CD15 | R#9 wall |
+| 4 | Freeze | frost, instant, short, control, freeze | ~70% + frz, CD12 | R#31; 3v; Lv4-34 |
+| 5 | Ice Wall | frost, ground, short, control, defense | wall 5 cells, CD15 | R#9; 5v; Lv5-49; split: wall-as-cover (RO) vs wall-as-weapon (ToS shatter) |
+| 5 | Slow Field | frost, ground, short, control | slow 50% 6s, CD12 | R#41; 6v; Lv5-16 |
+
+- **Lv4 Freeze** (R#31) — ~70% + frz, CD12. variants Lv4-34.
+  - RO: Mage: Frost Diver; Warlock: Freezing Spell
+  - ToS: Wizard-Cryomancer: Frost Pillar
+- **Lv5 Ice Wall** (R#9) — wall 5 cells, CD15. variants Lv5-49. split: wall-as-cover (RO) vs wall-as-weapon (ToS shatter).
+  - RO: Wizard: Ice Wall; Arch Mage: Mystery Illusion
+  - ToS: Wizard-Cryomancer: Ice Wall; Wizard-Cryomancer: Subzero Shield; Wizard-Sage: Ice Wall
+- **Lv5 Slow Field** (R#41) — slow 50% 6s, CD12. variants Lv5-16.
+  - RO: Wizard: Quagmire
+  - ToS: Archer-Quarrel Shooter: Scatter Caltrops; Scout-Linker: Spiritual Chain; Wizard-Chronomancer: Slow; Wizard-Chronomancer: Stop; Wizard-Psychokino: Slow
 
 ### Shock
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Swordsman-Swordsman: Liberate | phys,sho,shr,ctl | ~60% shout, CD12 | R#34 warcry |
-| 1 | Swordsman-Swordsman: Provoke | phys,sho,shr,ctl | taunt, CD10 | R#42 taunt attr |
-| 4 | Swordman: Fatal Blow | storm,ins,shr,ctl,shk | ~70% + stun, CD12 | R#32 lockdown |
-| 5 | Cleric-Priest: Monstrance | storm,ins,shr,ctl,shk | ~70% + stun, CD12 | R#32 lockdown |
-| 5 | Scout-Quarrel Shooter: Stone Shot | storm,ins,shr,ctl,shk | ~70% + stun, CD12 | R#32 lockdown |
-| 5 | Swordman: Provoke | phys,sho,shr,ctl | taunt + threat, CD10 | R#42 aggro |
-| 5 | Swordsman-Barbarian: Helm Chopper | storm,ins,shr,ctl,shk | ~70% + stun, CD12 | R#32 lockdown |
-| 5 | Swordsman-Barbarian: Warcry | phys,sho,shr,ctl | ~60% shout, CD12 | R#34 warcry |
-| 5 | Swordsman-Hoplite: Spear Throw | storm,ins,shr,ctl,shk | ~70% + stun, CD12 | R#32 lockdown |
-| 5 | Swordsman-Peltasta: Guardian | phys,sho,shr,ctl | taunt + threat, CD10 | R#42 aggro |
-| 5 | Swordsman-Peltasta: Swash Buckling | phys,sho,shr,ctl | taunt AoE, CD12 | R#42 AoE taunt |
-| 16 | Archer-Pied Piper: Dissonanz | phys,sho,shr,ctl | ~60% shout, CD12 | R#34 warcry |
-| 16 | Swordsman-Rodelero: Shield Push | phys,sho,shr,ctl | taunt + threat, CD10 | R#42 aggro |
-| 16 | Swordsman-Templar: Aggro orders | phys,sho,shr,ctl | taunt + threat, CD10 | R#42 aggro |
-| 16 | Swordsman-Templar: Battle Orders | phys,sho,shr,ctl | ~60% shout, CD12 | R#34 warcry |
-| 19 | Crusader: Shield Reflect | phys,sho,shr,ctl | taunt + threat, CD10 | R#42 aggro |
-| 25 | Paladin: Sacrifice | phys,sho,shr,ctl | taunt + threat, CD10 | R#42 aggro |
-| 31 | Wizard-Taoist: Upper Level | storm,ins,shr,ctl,shk | ~70% + stun, CD12 | R#32 lockdown |
-| 33 | Royal Guard: Battle Orders | phys,sho,shr,ctl | ~60% shout, CD12 | R#34 warcry |
-| 35 | Mechanic: Pile Bunker | storm,ins,shr,ctl,shk | ~70% + stun, CD12 | R#32 lockdown |
-| 35 | Royal Guard: Reflect Damage | phys,sho,shr,ctl | taunt + threat, CD10 | R#42 aggro |
-| 36 | Sura: Cursed Circle | phys,sho,shr,ctl | taunt + threat, CD10 | R#42 aggro |
-| 36 | Sura: Lion's Howl | phys,sho,shr,ctl | ~60% shout, CD12 | R#34 warcry |
-| 38 | Sura: Gentle Touch | phys,sho,shr,ctl | ~60% shout, CD12 | R#34 warcry |
+| 1 | Taunt | physical, shout, short, control | taunt + threat, CD10 | R#42; 10v; Lv1-36; same tags as #34 |
+| 1 | Warcry | physical, shout, short, control | ~60% shout, CD12 | R#34; 7v; Lv1-38; same tags as #42 |
+| 4 | Stun | storm, instant, short, control, shock | ~70% + stun, CD12 | R#32; 7v; Lv4-35 |
+
+- **Lv1 Taunt** (R#42) — taunt + threat, CD10. variants Lv1-36. same tags as #34; forced-aggro purpose, see #34 shout.
+  - RO: Swordman: Provoke; Crusader: Shield Reflect; Paladin: Sacrifice; Royal Guard: Reflect Damage; Sura: Cursed Circle
+  - ToS: Swordsman-Swordsman: Provoke; Swordsman-Peltasta: Guardian; Swordsman-Peltasta: Swash Buckling; Swordsman-Rodelero: Shield Push; Swordsman-Templar: Aggro orders
+- **Lv1 Warcry** (R#34) — ~60% shout, CD12. variants Lv1-38. same tags as #42; shout-debuff purpose, see #42 taunt.
+  - RO: Royal Guard: Battle Orders; Sura: Lion's Howl; Sura: Gentle Touch
+  - ToS: Swordsman-Swordsman: Liberate; Swordsman-Barbarian: Warcry; Archer-Pied Piper: Dissonanz; Swordsman-Templar: Battle Orders
+- **Lv4 Stun** (R#32) — ~70% + stun, CD12. variants Lv4-35.
+  - RO: Swordman: Fatal Blow; Mechanic: Pile Bunker
+  - ToS: Cleric-Priest: Monstrance; Scout-Quarrel Shooter: Stone Shot; Swordsman-Barbarian: Helm Chopper; Swordsman-Hoplite: Spear Throw; Wizard-Taoist: Upper Level
 
 ### Mind
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 14 | Ninja: Mist Slash | shadow,ins,shr,ctl | blind/curse, CD12 | R#45 acc-down |
-| 16 | Archer-Appraiser: Blindside | shadow,ins,shr,ctl | blind/curse, CD12 | R#45 acc-down |
-| 16 | Archer-Pied Piper: Hypnotische Floete | arcane,ins,shr,ctl,chm | sleep 6s, CD15 | R#36 incap |
-| 16 | Archer-Pied Piper: Wiegenlied | arcane,ins,shr,ctl,chm | sleep 6s, CD15 | R#36 incap |
-| 16 | Cleric-Dievdirbys: Zemyna | arcane,ins,shr,ctl,root | ~60% + petrify, CD15 | R#33 statue |
-| 16 | Cleric-Oracle: Arcane Energy | shadow,ins,shr,ctl | blind/curse, CD12 | R#45 acc-down |
-| 16 | Cleric-Oracle: Counter Spell | arcane,ins,long,ctl | dispel magic, CD15 | R#37 dispel |
-| 16 | Cleric-Oracle: Death Sentence | arcane,ins,shr,ctl,root | ~60% + petrify, CD15 | R#33 statue |
-| 16 | Cleric-Oracle: Prophecy | arcane,ins,shr,ctl,chm | debuff immune, CD20 | R#36 immunity |
-| 16 | Cleric-Pardoner: Discerning Evil | arcane,ins,long,ctl | silence 4s, CD15 | R#37 anti-cast |
-| 16 | Scout-Enchanter: Haziness | arcane,ins,shr,ctl,chm | sleep 6s, CD15 | R#36 incap |
-| 16 | Scout-Linker: Hangman's Knot | arcane,ins,shr,ctl,root | ~60% + petrify, CD15 | R#33 statue |
-| 16 | Scout-Rogue: Lachrymator | arcane,ins,long,ctl | silence 4s, CD15 | R#37 anti-cast |
-| 16 | Wizard-Chronomancer: Pass | arcane,ins,shr,ctl | lock 3s, CD30 | R#46 hard stop |
-| 16 | Wizard-Chronomancer: Quicken | arcane,ins,shr,ctl | +atk speed, CD20 | R#46 haste |
-| 16 | Wizard-Psychokino: Raise | arcane,ins,shr,ctl,chm | sleep 6s, CD15 | R#36 incap |
-| 16 | Wizard-Sage: Missile Hole | arcane,ins,long,ctl | silence 4s, CD15 | R#37 anti-cast |
-| 18 | Dancer: Scream | arcane,ins,shr,ctl,chm | sleep 6s, CD15 | R#36 incap |
-| 19 | Bard: Lullaby | arcane,ins,shr,ctl,chm | sleep 6s, CD15 | R#36 incap |
-| 20 | Sage: Spell Breaker | arcane,ins,long,ctl | interrupt, CD8 | R#37 interrupt |
-| 25 | Professor: Mind Breaker | arcane,ins,long,ctl | silence 4s, CD15 | R#37 anti-cast |
-| 31 | Minstrel/Wanderer: Deep Sleep Lullaby | arcane,ins,shr,ctl,chm | sleep 6s, CD15 | R#36 incap |
-| 31 | Scout-Assassin: Hasisas | shadow,ins,shr,ctl | blind/curse, CD12 | R#45 acc-down |
-| 31 | Wizard-Shadowmancer: Shadow Pool | shadow,sho,shr,ctl,fear | ~60% + fear, CD15 | R#35 scatter |
-| 31 | Wizard-Warlock: Ghastly Trail | shadow,sho,shr,ctl,fear | ~60% + fear, CD15 | R#35 scatter |
-| 33 | Warlock: Stasis | arcane,ins,long,ctl | silence 4s, CD15 | R#37 anti-cast |
-| 34 | Guillotine Cross: Dark Claw | shadow,ins,shr,ctl | blind/curse, CD12 | R#45 acc-down |
-| 40 | Sorcerer: Arrullo | arcane,ins,shr,ctl,chm | sleep 6s, CD15 | R#36 incap |
-| 45 | Abyss Chaser: Masquerade-Weakness | shadow,sho,shr,ctl,fear | ~60% + fear, CD15 | R#35 scatter |
-| 45 | Cardinal: Oratio | arcane,ins,shr,ctl | lock 3s, CD30 | R#46 hard stop |
-| 46 | Night Watch: Panic | shadow,sho,shr,ctl,fear | ~60% + fear, CD15 | R#35 scatter |
-| 47 | Shadow Cross: Shadow Sense | shadow,sho,shr,ctl,fear | ~60% + fear, CD15 | R#35 scatter |
-| 47 | Troubadour: Song of Despair | arcane,ins,long,ctl | silence 4s, CD15 | R#37 anti-cast |
-| 49 | Shiranui: Shadow Leap | shadow,ins,shr,ctl | blind/curse, CD12 | R#45 acc-down |
+| 14 | Blind | shadow, instant, short, control | blind/curse, CD12 | R#45; 6v; Lv14-49 |
+| 16 | Petrify | arcane, instant, short, control, root | ~60% + petrify, CD15 | R#33; 3v; Lv unknown |
+| 16 | Silence | arcane, instant, long, control | silence 4s, CD15 | R#37; 8v; Lv16-47; same delivery/role as #46, range long vs short |
+| 16 | Sleep | arcane, instant, short, control, charm | sleep 6s, CD15 | R#36; 9v; Lv16-40 |
+| 16 | Time Stop | arcane, instant, short, control | lock 3s, CD30 | R#46; 3v; Lv16-45; same delivery/role as #37, range short vs long |
+| 31 | Fear | shadow, shout, short, control, fear | ~60% + fear, CD15 | R#35; 5v; Lv31-47 |
+
+- **Lv14 Blind** (R#45) — blind/curse, CD12. variants Lv14-49.
+  - RO: Ninja: Mist Slash; Guillotine Cross: Dark Claw; Shiranui: Shadow Leap
+  - ToS: Archer-Appraiser: Blindside; Cleric-Oracle: Arcane Energy; Scout-Assassin: Hasisas
+- **Lv16 Petrify** (R#33) — ~60% + petrify, CD15. variants Lv unknown.
+  - RO: — (lowest-row-wins; Stone Curse see #12, Sienna see #13, Arrullo see #36)
+  - ToS: Cleric-Dievdirbys: Zemyna; Cleric-Oracle: Death Sentence; Scout-Linker: Hangman's Knot
+- **Lv16 Silence** (R#37) — silence 4s, CD15. variants Lv16-47. same delivery/role as #46, range long vs short; anti-cast, see #46 stop.
+  - RO: Sage: Spell Breaker; Professor: Mind Breaker; Warlock: Stasis; Troubadour: Song of Despair
+  - ToS: Cleric-Oracle: Counter Spell; Cleric-Pardoner: Discerning Evil; Scout-Rogue: Lachrymator; Wizard-Sage: Missile Hole
+- **Lv16 Sleep** (R#36) — sleep 6s, CD15. variants Lv16-40.
+  - RO: Dancer: Scream; Bard: Lullaby; Minstrel/Wanderer: Deep Sleep Lullaby; Sorcerer: Arrullo
+  - ToS: Archer-Pied Piper: Hypnotische Floete; Archer-Pied Piper: Wiegenlied; Cleric-Oracle: Prophecy; Scout-Enchanter: Haziness; Wizard-Psychokino: Raise
+- **Lv16 Time Stop** (R#46) — lock 3s, CD30. variants Lv16-45. same delivery/role as #37, range short vs long; hard-lock, see #37 silence.
+  - RO: Cardinal: Oratio
+  - ToS: Wizard-Chronomancer: Pass; Wizard-Chronomancer: Quicken
+- **Lv31 Fear** (R#35) — ~60% + fear, CD15. variants Lv31-47.
+  - RO: Abyss Chaser: Masquerade-Weakness; Night Watch: Panic; Shadow Cross: Shadow Sense
+  - ToS: Wizard-Shadowmancer: Shadow Pool; Wizard-Warlock: Ghastly Trail
 
 ### Space
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Linker: Hangman's Knot | arcane,grd,shr,ctl,pull | ~60% + pull, CD14 | R#38 vacuum |
-| 3 | Hunter: Ankle Snare | nature,grd,shr,ctl,root | root 4s trap, CD12 | R#40 Day-0 + trap root |
-| 5 | Archer-Hunter: Coursing | nature,grd,shr,ctl,root | pet hold, CD12 | R#40 beast hold |
-| 5 | Archer-Hunter: Snatching | nature,grd,shr,ctl,root | ~40% + root 4s, CD12 | R#40 snare |
-| 12 | Wizard: Ganbantein | arcane,grd,shr,ctl,pull | ~60% + pull, CD14 | R#38 vacuum |
-| 16 | Archer-Cannoneer: Cannon Blast | phys,ins,shr,ctl,kb | ~80% + kb, CD8 | R#39 peel |
-| 16 | Cleric-Dievdirbys: Laima | nature,grd,shr,ctl,root | ~40% + root 4s, CD12 | R#40 snare |
-| 16 | Swordsman-Cataphract: Earth Wave | phys,ins,shr,ctl,kb | ~80% + kb, CD8 | R#39 peel |
-| 16 | Swordsman-Cataphract: Steed Charge | phys,ins,shr,ctl,kb | ~80% + kb, CD8 | R#39 peel |
-| 16 | Wizard-Psychokino: Magnetic Force | arcane,grd,shr,ctl,pull | ~60% + pull, CD14 | R#38 pull |
-| 16 | Wizard-Sage: Ultimate Dimension | arcane,grd,shr,ctl,pull | ~60% + pull, CD14 | R#38 vacuum |
-| 31 | Swordsman-Lancer: Joust | phys,ins,shr,ctl,kb | ~80% + kb, CD8 | R#39 peel |
-| 31 | Swordsman-Lancer: Unhorsing | phys,ins,shr,ctl,kb | ~80% + kb, CD8 | R#39 peel |
-| 31 | Swordsman-Retiarius: Rete | nature,grd,shr,ctl,root | ~40% + root 4s, CD12 | R#40 snare |
-| 31 | Wizard-Terramancer: Root Snare | nature,grd,shr,ctl,root | ~40% + root 4s, CD12 | R#40 snare |
-| 33 | Genetic: Thorn Trap | nature,grd,shr,ctl,root | ~40% + root 4s, CD12 | R#40 snare |
-| 33 | Ranger: Electric Shock | nature,grd,shr,ctl,root | ~40% + root 4s, CD12 | R#40 snare |
-| 35 | Ranger: Warg Bite | phys,ins,shr,ctl,kb | ~80% + kb, CD8 | R#39 peel |
-| 38 | Sorcerer: Earth Grave | arcane,grd,shr,ctl,pull | ~60% + pull, CD14 | R#38 vacuum |
-| 39 | Warlock: Gravitational Field | arcane,grd,shr,ctl,pull | ~60% + pull, CD14 | R#38 vacuum |
-| 39 | Warlock: Marsh of Abyss | arcane,grd,shr,ctl,pull | ~60% + pull, CD14 | R#38 vacuum |
-| 40 | Sorcerer: Extreme Vacuum | arcane,grd,shr,ctl,pull | ~60% + pull, CD14 | R#38 vacuum |
+| 1 | Vacuum | arcane, ground, short, control, pull | ~60% + pull, CD14 | R#38; 8v; Lv1-40 |
+| 3 | Snare | nature, ground, short, control, root | ~40% + root 4s, CD12 | R#40; 8v; Lv3-33; Day-0; P0 L3 |
+| 16 | Knockback | physical, instant, short, control, knockback | ~80% + kb, CD8 | R#39; 6v; Lv16-35 |
+
+- **Lv1 Vacuum** (R#38) — ~60% + pull, CD14. variants Lv1-40.
+  - RO: Wizard: Ganbantein; Sorcerer: Earth Grave; Warlock: Gravitational Field; Warlock: Marsh of Abyss; Sorcerer: Extreme Vacuum
+  - ToS: Linker: Hangman's Knot; Wizard-Psychokino: Magnetic Force; Wizard-Sage: Ultimate Dimension
+- **Lv3 Snare** (R#40) — ~40% + root 4s, CD12. variants Lv3-33. Day-0 arrival pool. P0 L3.
+  - RO: Hunter: Ankle Snare; Genetic: Thorn Trap; Ranger: Electric Shock
+  - ToS: Archer-Hunter: Coursing; Archer-Hunter: Snatching; Cleric-Dievdirbys: Laima; Swordsman-Retiarius: Rete; Wizard-Terramancer: Root Snare
+- **Lv16 Knockback** (R#39) — ~80% + kb, CD8. variants Lv16-35.
+  - RO: Ranger: Warg Bite
+  - ToS: Archer-Cannoneer: Cannon Blast; Swordsman-Cataphract: Earth Wave; Swordsman-Cataphract: Steed Charge; Swordsman-Lancer: Joust; Swordsman-Lancer: Unhorsing
 
 ### Meta
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 11 | Sage: Dispell | arcane,ins,shr,ctl,brk | dispel/strip, CD15 | R#43 strip |
-| 13 | Crusader: Devotion | arcane,ins,long,ctl | share 5 allies, CD20 | R#44 5-tgt share |
-| 16 | Cleric-Kabbalist: Merkabah | arcane,ins,long,ctl | share dmg link, CD20 | R#44 share |
-| 16 | Cleric-Kabbalist: Nachash | arcane,ins,long,ctl | share dmg link, CD20 | R#44 share |
-| 16 | Cleric-Plague Doctor: Bloodletting | arcane,ins,shr,ctl,brk | self-cleanse, CD12 | R#43 self-cleanse |
-| 16 | Cleric-Plague Doctor: Disenchant | arcane,ins,shr,ctl,brk | dispel/strip, CD15 | R#43 strip |
-| 16 | Scout-Enchanter: Enchant Glove | arcane,ins,shr,ctl,brk | dispel/strip, CD15 | R#43 strip |
-| 16 | Scout-Linker: Joint Penalty | arcane,ins,long,ctl | link dmg, CD20 | R#44 dmg link |
-| 16 | Scout-Linker: Lifeline | arcane,ins,long,ctl | share dmg link, CD20 | R#44 share |
-| 19 | Rogue: Divest Helm/Shield/Armor/Weapon | arcane,ins,shr,ctl,brk | dispel/strip, CD15 | R#43 strip |
-| 20 | Soul Linker: Kaahi/Kaupe/Kaite/Kaize | arcane,ins,long,ctl | share dmg link, CD20 | R#44 share |
-| 25 | Professor: Soul Burn | arcane,ins,shr,ctl,brk | dispel/strip, CD15 | R#43 strip |
-| 25 | Stalker: Full Strip | arcane,ins,shr,ctl,brk | strip gear, CD30 | R#43 PvP strip |
-| 32 | Warlock: Ganbantein | arcane,ins,shr,ctl,brk | dispel/strip, CD15 | R#43 strip |
-| 33 | Arch Bishop: Officium | arcane,ins,long,ctl | share dmg link, CD20 | R#44 share |
-| 38 | Shadow Chaser: Masquerade | arcane,ins,shr,ctl,brk | dispel/strip, CD15 | R#43 strip |
+| 11 | Dispel | arcane, instant, short, control, breaker | dispel/strip, CD15 | R#43; 9v; Lv11-38 |
+| 13 | Link | arcane, instant, long, control | share dmg link, CD20 | R#44; 7v; Lv13-33 |
+
+- **Lv11 Dispel** (R#43) — dispel/strip, CD15. variants Lv11-38.
+  - RO: Sage: Dispell; Rogue: Divest Helm/Shield/Armor/Weapon; Professor: Soul Burn; Stalker: Full Strip; Warlock: Ganbantein; Shadow Chaser: Masquerade
+  - ToS: Cleric-Plague Doctor: Bloodletting; Cleric-Plague Doctor: Disenchant; Scout-Enchanter: Enchant Glove
+- **Lv13 Link** (R#44) — share dmg link, CD20. variants Lv13-33.
+  - RO: Crusader: Devotion; Soul Linker: Kaahi/Kaupe/Kaite/Kaize; Arch Bishop: Officium
+  - ToS: Cleric-Kabbalist: Merkabah; Cleric-Kabbalist: Nachash; Scout-Linker: Joint Penalty; Scout-Linker: Lifeline
 
 ## 5. Utilities
 
 ### Buffs
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Acolyte: Blessing | phys,aura,self,sup | +STR/DEX/INT, CD15 | R#52 stat buff |
-| 1 | Archer-Archer: Swift Step | arcane,aura,self,sup | +haste aura, CD20 | R#54 haste |
-| 3 | Archer: Wind Walk | arcane,aura,self,sup | +haste aura, CD20 | R#54 haste |
-| 3 | Mage: Increase SP Recovery | arcane,ins,shr,sup | +SP regen, CD20 | R#57 battery |
-| 4 | Bard: A Poem of Bragi | phys,aura,self,sup | -cast delay, CD20 | R#52 P0 L4 + caster enabler |
-| 5 | Cleric-Priest: Blessing | phys,aura,self,sup | +10% atk aura, CD20 | R#52 ATK buff |
-| 5 | Cleric-Priest: Sacrament | phys,aura,self,sup | +10% atk aura, CD20 | R#52 ATK buff |
-| 5 | Swordsman-Peltasta: High Guard | phys,aura,self,def | reflect 30%, CD15 | R#55 thorns |
-| 12 | Priest: Increase AGI | arcane,aura,self,sup | +haste aura, CD20 | R#54 haste |
-| 13 | Bard: Magic Strings | arcane,ins,shr,sup | -SP cost, CD20 | R#57 SP logistics |
-| 13 | Priest: Suffragium | arcane,aura,self,sup | +haste aura, CD20 | R#54 haste |
-| 13 | Soul Linker: Alchemist Spirit | arcane,ins,self,sup | imbue element, CD15 | R#58 imbue |
-| 16 | Cleric-Chaplain: Last Rites | phys,aura,self,sup | +10% atk aura, CD20 | R#52 ATK buff |
-| 16 | Scout-Enchanter: Agility | arcane,aura,self,sup | +haste aura, CD20 | R#54 haste |
-| 16 | Scout-Enchanter: Enchant Fire | arcane,ins,self,sup | imbue fire, CD15 | R#58 imbue |
-| 16 | Scout-Enchanter: Enchant Lightning | arcane,ins,self,sup | imbue storm, CD15 | R#58 imbue |
-| 16 | Scout-Squire: Refreshment Table | arcane,ins,shr,sup | food + SP, CD20 | R#57 food shop |
-| 16 | Scout-Thaumaturge: Swell Hands/Right Arm | phys,aura,self,sup | +10% atk aura, CD20 | R#52 ATK buff |
-| 16 | Swordsman-Murmillo: Cassis Crista | phys,aura,self,def | reflect 30%, CD15 | R#55 thorns |
-| 16 | Wizard-Chronomancer: Haste | arcane,aura,self,sup | +move, CD20 | R#54 haste |
-| 16 | Wizard-Thaumaturge: Swell Body | arcane,aura,self,sup | +haste aura, CD20 | R#54 haste |
-| 17 | Priest: Impositio Manus | phys,aura,self,sup | +10% atk aura, CD20 | R#52 ATK buff |
-| 18 | Sage: Endow Blaze/Quake/Tsunami/Whirlwind | arcane,ins,self,sup | imbue element, CD15 | R#58 imbue |
-| 30 | Arch Bishop: Canto Candidus | phys,aura,self,sup | +10% atk aura, CD20 | R#52 ATK buff |
-| 30 | Arch Bishop: Clementia | phys,aura,self,sup | +all stats, CD15 | R#52 all-stats |
-| 31 | Archer-Hwarang: war-drum buffs | phys,aura,self,sup | +10% atk aura, CD20 | R#52 ATK buff |
-| 31 | Cleric-Inquisitor: Iron Maiden | phys,aura,self,def | reflect 30%, CD15 | R#55 thorns |
-| 36 | Sorcerer: Striking | arcane,aura,self,sup | +haste aura, CD20 | R#54 haste |
+| 1 | ATK Aura | physical, aura, self, support | +10% atk aura, CD20 | R#52; 10v; Lv1-31; P0 L4 + caster enabler |
+| 1 | Haste | arcane, aura, self, support | +haste aura, CD20 | R#54; 8v; Lv1-36 |
+| 3 | Battery | arcane, instant, short, support | +SP regen, CD20 | R#57; 3v; Lv3-16 |
+| 5 | Thorns | physical, aura, self, defense | reflect 30%, CD15 | R#55; 3v; Lv5-31 |
+| 13 | Imbue | arcane, instant, self, support | imbue element, CD15 | R#58; 4v; Lv13-18 |
+
+- **Lv1 ATK Aura** (R#52) — +10% atk aura, CD20. variants Lv1-31. P0 L4 + caster enabler.
+  - RO: Acolyte: Blessing; Bard: A Poem of Bragi; Priest: Impositio Manus; Arch Bishop: Canto Candidus; Arch Bishop: Clementia
+  - ToS: Cleric-Priest: Blessing; Cleric-Priest: Sacrament; Cleric-Chaplain: Last Rites; Scout-Thaumaturge: Swell Hands/Right Arm; Archer-Hwarang: war-drum buffs
+- **Lv1 Haste** (R#54) — +haste aura, CD20. variants Lv1-36.
+  - RO: Archer: Wind Walk; Priest: Increase AGI; Priest: Suffragium; Sorcerer: Striking
+  - ToS: Archer-Archer: Swift Step; Scout-Enchanter: Agility; Wizard-Chronomancer: Haste; Wizard-Thaumaturge: Swell Body
+- **Lv3 Battery** (R#57) — +SP regen, CD20. variants Lv3-16.
+  - RO: Mage: Increase SP Recovery; Bard: Magic Strings
+  - ToS: Scout-Squire: Refreshment Table
+- **Lv5 Thorns** (R#55) — reflect 30%, CD15. variants Lv5-31.
+  - RO: — (lowest-row-wins; Reflect see #42, Thorn Trap see #40)
+  - ToS: Swordsman-Peltasta: High Guard; Swordsman-Murmillo: Cassis Crista; Cleric-Inquisitor: Iron Maiden
+- **Lv13 Imbue** (R#58) — imbue element, CD15. variants Lv13-18.
+  - RO: Soul Linker: Alchemist Spirit; Sage: Endow Blaze/Quake/Tsunami/Whirlwind
+  - ToS: Scout-Enchanter: Enchant Fire; Scout-Enchanter: Enchant Lightning
 
 ### Move
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Archer-Archer: Leap | phys,ins,self,mob | flip 6 + drop, CD10 | R#72 drops combat |
-| 1 | Knight: Charge Attack | phys,ins,self,mob | dash 6, CD8 | R#72 Day-0 + gap close |
-| 1 | Super Novice: Teleport | arcane,ins,self,mob | blink 9, CD15 | R#71 blink |
-| 5 | Acolyte: Teleport | arcane,ins,self,mob | blink 9, CD15 | R#71 blink |
-| 15 | Knight: Cavalier Mastery | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 16 | Scout-Schwarzer Reiter: Caracole | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 16 | Scout-Schwarzer Reiter: Limacon | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 16 | Scout-Schwarzer Reiter: Retreat Shot | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 16 | Scout-Shinobi: Mokuton | arcane,ins,self,mob | blink 9, CD15 | R#71 blink |
-| 16 | Swordsman-Cataphract: Impaler | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 16 | Swordsman-Cataphract: Rush | phys,ins,self,mob,stn | charge dmg, CD10 | R#69 charge |
-| 16 | Swordsman-Cataphract: Trot | phys,ins,self,mob,stn | mounted, CD10 | R#69 mount |
-| 16 | Swordsman-Hackapell: mounted archery | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 16 | Swordsman-Murmillo: Evade Thrust | phys,ins,self,mob | dash 6, CD8 | R#72 gap close |
-| 16 | Swordsman-Murmillo: Sprint | phys,ins,self,mob | dash 6, CD8 | R#72 gap close |
-| 16 | Wizard-Psychokino: Teleportation | arcane,ins,self,mob | blink 9, CD15 | R#71 blink |
-| 16 | Wizard-Sage: Blink | arcane,ins,self,mob | blink 9, CD15 | R#71 blink |
-| 18 | Crusader: Cavalry Mastery | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 31 | Scout-Assassin: Instant Acceleration | phys,ins,self,mob | dash 6, CD8 | R#72 gap close |
-| 31 | Scout-Hakkapeliter: mounted skills | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 31 | Swordsman-Lancer: Quintain | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 38 | Mechanic: Madogear License | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 39 | Ranger: Warg Rider | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 39 | Rune Knight: Dragon Training | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
-| 40 | Rune Knight: Phantom Thrust | phys,ins,self,mob | dash 6, CD8 | R#72 gap close |
-| 49 | Night Watch: Wild Fire | phys,ins,self,mob,stn | mount stance, CD10 | R#69 mounted |
+| 1 | Blink | arcane, instant, self, mobility | blink 9, CD15 | R#71; 5v; Lv1-16; self-blink vs party-portal variants (portal see #78) |
+| 1 | Dash | physical, instant, self, mobility | dash 6, CD8 | R#72; 6v; Lv1-40; Day-0; P0 L1 |
+| 15 | Mount | physical, instant, self, mobility, stance | mount stance, CD10 | R#69; 15v; Lv15-49; stance flag |
+
+- **Lv1 Blink** (R#71) — blink 9, CD15. variants Lv1-16. self-blink vs party-portal variants (portal see #78).
+  - RO: Super Novice: Teleport; Acolyte: Teleport
+  - ToS: Scout-Shinobi: Mokuton; Wizard-Psychokino: Teleportation; Wizard-Sage: Blink
+- **Lv1 Dash** (R#72) — dash 6, CD8. variants Lv1-40. Day-0 arrival pool. P0 L1.
+  - RO: Knight: Charge Attack; Rune Knight: Phantom Thrust
+  - ToS: Archer-Archer: Leap; Swordsman-Murmillo: Evade Thrust; Swordsman-Murmillo: Sprint; Scout-Assassin: Instant Acceleration
+- **Lv15 Mount** (R#69) — mount stance, CD10. variants Lv15-49. stance flag; charge variants deal damage.
+  - RO: Knight: Cavalier Mastery; Crusader: Cavalry Mastery; Mechanic: Madogear License; Ranger: Warg Rider; Rune Knight: Dragon Training; Night Watch: Wild Fire
+  - ToS: Scout-Schwarzer Reiter: Caracole; Scout-Schwarzer Reiter: Limacon; Scout-Schwarzer Reiter: Retreat Shot; Swordsman-Cataphract: Impaler; Swordsman-Cataphract: Rush
+  + Swordsman-Cataphract: Trot; Swordsman-Hackapell: mounted archery; Scout-Hakkapeliter: mounted skills; Swordsman-Lancer: Quintain
 
 ### Sight
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Scout-Scout: Cloaking | shadow,ins,self,mob | hide 10s, CD20 | R#73 stealth |
-| 1 | Scout-Scout: Perspective | arcane,ins,shr,sup | reveal 9, CD12 | R#74 anti-stealth |
-| 1 | Scout-Scout: Scan | arcane,ins,shr,sup | reveal 9, CD12 | R#74 reveal |
-| 1 | Super Novice: Hiding | shadow,ins,self,mob | hide 10s, CD20 | R#73 hidden |
-| 3 | Thief: Hiding | shadow,ins,self,mob | hide stat 10s, CD20 | R#73 stat-hidden |
-| 4 | Acolyte: Sight | arcane,ins,shr,sup | reveal 9, CD12 | R#74 anti-stealth |
-| 4 | Mage: Sight | arcane,ins,long,sup | reveal area, CD12 | R#80 gemless reveal |
-| 10 | Wizard: Sightrasher | arcane,ins,long,sup | vision ward, CD15 | R#80 fog tool |
-| 11 | Priest: Ruwach | arcane,ins,shr,sup | reveal 9, CD12 | R#74 anti-stealth |
-| 13 | Wizard: Sense | arcane,ins,long,sup | vision ward, CD15 | R#80 fog tool |
-| 14 | Assassin: Cloaking | shadow,ins,self,mob | hide move 10s, CD20 | R#73 move-hidden |
-| 14 | Rogue: Stalk | shadow,ins,self,mob | hide 10s, CD20 | R#73 hidden |
-| 16 | Archer-Appraiser: Forecast | arcane,ins,long,sup | vision ward, CD15 | R#80 fog tool |
-| 16 | Hunter: Detect | arcane,ins,shr,sup | reveal 9, CD12 | R#74 anti-stealth |
-| 16 | Scout-Outlaw: Ambush | shadow,ins,self,mob | hide 10s, CD20 | R#73 hidden |
-| 16 | Scout-Rogue: Burrow | shadow,ins,self,mob | hide 10s, CD20 | R#73 hidden |
-| 16 | Scout-Rogue: Sneak Hit | shadow,ins,self,mob | hide 10s, CD20 | R#73 hidden |
-| 16 | Scout-Shinobi: Doton | shadow,ins,self,mob | hide 10s, CD20 | R#73 hidden |
-| 18 | Warg: Keen Nose | arcane,ins,shr,sup | reveal 9, CD12 | R#74 anti-stealth |
-| 20 | Ninja: Cicada Skin | shadow,ins,self,mob | hide 10s, CD20 | R#73 hidden |
-| 33 | Shadow Chaser: Shadow Form | shadow,ins,self,mob | hide 10s, CD20 | R#73 hidden |
-| 38 | Ranger: Keen Nose | arcane,ins,shr,sup | reveal 9, CD12 | R#74 anti-stealth |
-| 39 | Ranger: Focused Arrow Strike | arcane,ins,shr,sup | reveal 9, CD12 | R#74 anti-stealth |
+| 1 | Reveal | arcane, instant, short, support | reveal 9, CD12 | R#74; 8v; Lv1-39; short/long range variants by source |
+| 1 | Stealth | shadow, instant, self, mobility | hide 10s, CD20 | R#73; 11v; Lv1-33 |
+| 4 | Scout | arcane, instant, long, support | vision ward, CD15 | R#80; 4v; Lv4-16 |
 
-### Econ
+- **Lv1 Reveal** (R#74) — reveal 9, CD12. variants Lv1-39. short/long range variants by source.
+  - RO: Acolyte: Sight; Priest: Ruwach; Hunter: Detect; Warg: Keen Nose; Ranger: Keen Nose; Ranger: Focused Arrow Strike
+  - ToS: Scout-Scout: Perspective; Scout-Scout: Scan
+- **Lv1 Stealth** (R#73) — hide 10s, CD20. variants Lv1-33.
+  - RO: Super Novice: Hiding; Thief: Hiding; Assassin: Cloaking; Rogue: Stalk; Ninja: Cicada Skin; Shadow Chaser: Shadow Form
+  - ToS: Scout-Scout: Cloaking; Scout-Outlaw: Ambush; Scout-Rogue: Burrow; Scout-Rogue: Sneak Hit; Scout-Shinobi: Doton
+- **Lv4 Scout** (R#80) — vision ward, CD15. variants Lv4-16.
+  - RO: Mage: Sight; Wizard: Sightrasher; Wizard: Sense
+  - ToS: Archer-Appraiser: Forecast
 
-| Lv | Skill | Tags | Calc | Notes |
+### Econ (portals see #78)
+
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 3 | Merchant: Overcharge | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 3 | Merchant: Vending | phys,ins,self,sup | shop camp, fee | R#75 market |
-| 4 | Merchant: Discount | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 5 | Merchant: Enlarge Weight Limit | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 10 | Taekwon: Peaceful Break | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 13 | Blacksmith: Smith Dagger/Sword/Two-Handed S~ | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 15 | Alchemist: Learning Potion | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 15 | Blacksmith: Repair Weapon | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 16 | Alchemist: Pharmacy | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 16 | Scout-Appraiser: Devaluation | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 16 | Scout-Appraiser: Overestimate | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 16 | Scout-Squire: Armor Maintenance | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 16 | Scout-Squire: Base Camp | phys,ins,self,sup | camp recall, CD30 | R#75 party recall |
-| 16 | Scout-Squire: Repair | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 16 | Scout-Squire: Weapon Maintenance | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 16 | Wizard-Sage: Portal | arcane,ins,long,sup | portal party, CD30 | R#78 market teleport |
-| 20 | Priest: Warp Portal | arcane,ins,long,sup | portal party, CD30 | R#78 party taxi |
-| 30 | Shadow Chaser: Dimensional Door | arcane,ins,long,sup | portal party, CD30 | R#78 taxi |
-| 31 | Wizard-Alchemist: Gem Roasting | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 31 | Wizard-Alchemist: Item Awakening | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 31 | Wizard-Alchemist: Magnum Opus | phys,ins,self,sup | camp econ, fee | R#75 market |
-| 31 | Wizard-Alchemist: Tincturing | phys,ins,self,sup | camp econ, fee | R#75 market |
+| 3 | Market | physical, instant, self, support | camp econ, fee | R#75; 19v; Lv3-31 |
+| 16 | Portal | arcane, instant, long, support | portal party, CD30 | R#78; 3v; Lv16-30 |
+
+- **Lv3 Market** (R#75) — camp econ, fee. variants Lv3-31.
+  - RO: Merchant: Overcharge; Merchant: Vending; Merchant: Discount; Merchant: Enlarge Weight Limit; Taekwon: Peaceful Break
+  + Blacksmith: Smith Dagger/Sword/Two-Handed Sword/Spear/Axe/Mace/Knuckle (forge!); Blacksmith: Repair Weapon
+  + Alchemist: Learning Potion; Alchemist: Pharmacy
+  - ToS: Scout-Appraiser: Devaluation; Scout-Appraiser: Overestimate; Scout-Squire: Armor Maintenance; Scout-Squire: Base Camp; Scout-Squire: Repair
+  + Scout-Squire: Weapon Maintenance; Wizard-Alchemist: Gem Roasting; Wizard-Alchemist: Item Awakening; Wizard-Alchemist: Magnum Opus; Wizard-Alchemist: Tincturing
+- **Lv16 Portal** (R#78) — portal party, CD30. variants Lv16-30.
+  - RO: Priest: Warp Portal; Shadow Chaser: Dimensional Door
+  - ToS: Wizard-Sage: Portal
 
 ### Survival
 
-| Lv | Skill | Tags | Calc | Notes |
+| Lv | Unified Skill | Tags | Calc | Sources/Notes |
 |---|---|---|---|---|
-| 1 | Super Novice: scattered regen | phys,ins,self,sus | regen/potion+, CD15 | R#76 sustain |
-| 2 | Swordman: Increase HP Recovery | phys,ins,self,sus | regen/potion+, CD15 | R#76 sustain |
-| 4 | Swordman: Endure | phys,ins,self,def | no-flinch 10s, CD20 | R#79 no-flinch |
-| 5 | Swordsman-Highlander: Cross Guard | phys,ins,self,def | no-flinch 10s, CD20 | R#79 anti-flinch |
-| 16 | Crusader: Shrink | phys,ins,self,def | no-flinch 10s, CD20 | R#79 anti-flinch |
-| 19 | Alchemist: Aid Potion | phys,ins,self,sus | regen/potion+, CD15 | R#76 sustain |
-| 25 | Champion: Zen | phys,ins,self,def | no-flinch 10s, CD20 | R#79 anti-flinch |
+| 1 | Sustain | physical, instant, self, sustain | regen/potion+, CD15 | R#76; 3v; Lv1-19 |
+| 4 | Endure | physical, instant, self, defense | no-flinch 10s, CD20 | R#79; 4v; Lv4-25 |
+
+- **Lv1 Sustain** (R#76) — regen/potion+, CD15. variants Lv1-19.
+  - RO: Super Novice: scattered regen; Swordman: Increase HP Recovery; Alchemist: Aid Potion
+  - ToS: — (lowest-row-wins; Bear see #53, Revive see #47, Ein Sof see #49, Frenzy see #30)
+- **Lv4 Endure** (R#79) — no-flinch 10s, CD20. variants Lv4-25.
+  - RO: Swordman: Endure; Crusader: Shrink; Champion: Zen
+  - ToS: Swordsman-Highlander: Cross Guard
 
 ## 6. Coverage
 
-- RO primary skills: 298. ToS primary skills: 341. Total: 639.
-- All 80 comparison rows mapped, each with 1+ primaries; no row dropped.
-- Dups merged to lowest row (202 merged); 11 see-ref secondaries skipped.
-- Sources: comparison doc footer (irowiki, divine-pride, ro-calc, ToS class
-  pages, toswiki, fandom, CoA wiki, ascension.gg, db.exil.es).
-- Numbers: tag whitelist + targeters per skill-tag-taxonomy.md; Lv gates + P0
-  pins per skill-advancement.md §§1-2, 6.3-6.4; pillars per
-  skill-adoption-categories.md; TTK bands + factor_base per
-  classless-brainstorm.md §13 and thousands-skills-plan.md §4.
+- Before: 639 catalog rows (RO 298 + ToS 341 primaries, documented).
+- After: 80 unified families (one per comparison row #1-80).
+- Merged away: 559 duplicate rows into shared families.
+- Parsed cells: 298 RO-style + 341 ToS-style = 639.
+- Every prior primary lands in exactly one family (lowest row wins).
+- Day-0 pool + P0 pins preserved per family bullets.
+- Tags whitelist + targeters per skill-tag-taxonomy.md; Lv gates +
+  P0 pins per skill-advancement.md §§6.3-6.4; TTK + factor_base per
+  classless-brainstorm.md §13.

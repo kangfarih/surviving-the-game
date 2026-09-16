@@ -6,15 +6,17 @@ import { GameConfig } from '@/game/types';
 
 interface GameCanvasProps {
   config: GameConfig;
+  showGrid: boolean;
 }
 
 export interface GameCanvasRef {
   regenerate: () => void;
   updateConfig: (config: GameConfig) => void;
+  setShowGrid: (show: boolean) => void;
 }
 
 export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
-  ({ config }, ref) => {
+  ({ config, showGrid }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<GameEngine | null>(null);
     const [isClient, setIsClient] = useState(false);
@@ -68,7 +70,14 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(
           engineRef.current.updateConfig(newConfig);
         }
       },
+      setShowGrid: (show: boolean) => {
+        engineRef.current?.setShowGrid(show);
+      },
     }));
+
+    useEffect(() => {
+      engineRef.current?.setShowGrid(showGrid);
+    }, [showGrid]);
 
     if (!isClient) {
       return (

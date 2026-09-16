@@ -21,6 +21,8 @@ const MAX_ZOOM = 5;
 export class GameEngine {
   private app: PIXI.Application | null = null;
   private tileGraphics: PIXI.Graphics | null = null;
+  private gridGraphics: PIXI.Graphics | null = null;
+  private showGrid = true;
   private container: PIXI.Container | null = null;
   private config: GameConfig;
   private tileMap: TileMap | null = null;
@@ -29,6 +31,7 @@ export class GameEngine {
   private offset: { x: number; y: number } = { x: 0, y: 0 };
   private scale: number = 1;
   private fitScale: number = 1;
+  private minScale: number = MIN_ZOOM;
   private canvasWidth: number = 0;
   private canvasHeight: number = 0;
   private canvas: HTMLCanvasElement | null = null;
@@ -60,6 +63,10 @@ export class GameEngine {
     // Create container for tilemap
     this.container = new PIXI.Container();
     this.app.stage.addChild(this.container);
+
+    // Create grid overlay above tile graphics
+    this.gridGraphics = new PIXI.Graphics();
+    this.container.addChild(this.gridGraphics);
 
     // Generate initial tilemap
     this.generate();
@@ -107,13 +114,26 @@ export class GameEngine {
     // Draw tiles
     this.drawTileMap();
 
+    // Ensure grid overlay stays on top (fix z-order) and redraw it
+    if (!this.gridGraphics) {
+      this.gridGraphics = new PIXI.Graphics();
+      this.container?.addChild(this.gridGraphics);
+    } else {
+      this.container?.removeChild(this.gridGraphics);
+      this.container?.addChild(this.gridGraphics);
+    }
+    this.drawGrid();
+
     // Auto-fit the map to screen
     this.computeFitScale();
     this.applyFitView();
   }
 
   private computeFitScale(): void {
-    if (!this.tileMap) return;
+    if (!this.tileMap) {
+      this.minScale = MIN_ZOOM;
+      return;
+    }
 
     const mapPixelWidth = this.tileMap.width * this.config.tilePixelSize;
     const mapPixelHeight = this.tileMap.height * this.config.tilePixelSize;
@@ -124,6 +144,10 @@ export class GameEngine {
         this.canvasWidth / mapPixelWidth,
         this.canvasHeight / mapPixelHeight,
       ) * 0.9;
+
+    // Minimum zoom is the fit scale: the whole map plus outside margin
+    // stays visible, and the user can never zoom out past that.
+    this.minScale = this.fitScale;
   }
 
   private applyFitView(): void {
@@ -174,7 +198,7 @@ export class GameEngine {
   private zoomAtPoint(newScale: number, clientX: number, clientY: number): void {
     if (!this.container || !this.tileMap) return;
 
-    const clampedScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
+    const clampedScale = Math.max(this.minScale, Math.min(MAX_ZOOM, newScale));
 
     // Mouse position relative to canvas
     const mouseX = clientX;
@@ -238,6 +262,50 @@ export class GameEngine {
     }
   }
 
+  private drawGrid(): void {
+    if (!this.gridGraphics) return;
+    this.gridGraphics.clear();
+    if (!this.showGrid || !this.tileMap) return;
+
+    const mapPixelW = this.tileMap.width * this.config.tilePixelSize;
+    const mapPixelH = this.tileMap.height * this.config.tilePixelSize;
+
+    // Pass 1: dark halo so lines are visible on light tiles
+    this.gridGraphics.lineStyle(2, 0x000000, 0.55);
+    for (let x = 0; x <= this.tileMap.width; x++) {
+      const px = x * this.config.tilePixelSize;
+      this.gridGraphics.moveTo(px, 0);
+      this.gridGraphics.lineTo(px, mapPixelH);
+    }
+    for (let y = 0; y <= this.tileMap.height; y++) {
+      const py = y * this.config.tilePixelSize;
+      this.gridGraphics.moveTo(0, py);
+      this.gridGraphics.lineTo(mapPixelW, py);
+    }
+
+    // Pass 2: thin white core so lines are visible on dark tiles
+    this.gridGraphics.lineStyle(1, 0xffffff, 0.55);
+    for (let x = 0; x <= this.tileMap.width; x++) {
+      const px = x * this.config.tilePixelSize;
+      this.gridGraphics.moveTo(px, 0);
+      this.gridGraphics.lineTo(px, mapPixelH);
+    }
+    for (let y = 0; y <= this.tileMap.height; y++) {
+      const py = y * this.config.tilePixelSize;
+      this.gridGraphics.moveTo(0, py);
+      this.gridGraphics.lineTo(mapPixelW, py);
+    }
+
+    // Map extent border so the map bounds are obvious
+    this.gridGraphics.lineStyle(2, 0xfbbf24, 0.9);
+    this.gridGraphics.drawRect(0, 0, mapPixelW, mapPixelH);
+  }
+
+  public setShowGrid(show: boolean): void {
+    this.showGrid = show;
+    this.drawGrid();
+  }
+
   private setupControls(canvas: HTMLCanvasElement): void {
     // Mouse down - start drag
     canvas.addEventListener('mousedown', (e) => {
@@ -277,10 +345,12 @@ export class GameEngine {
       if (!this.container) return;
 
       if (Math.abs(this.scale - this.fitScale) < 0.01) {
-        // Currently at fit-view, zoom to 2x at click position
-        this.zoomAtPoint(2, e.clientX, e.clientY);
+        // Currently at fit-view, zoom in ~2x at click position.
+        // Use 2x fit when fit itself is large so the target never
+        // ends up below minScale; zoomAtPoint clamps to [minScale, MAX].
+        this.zoomAtPoint(Math.max(2, this.fitScale * 2), e.clientX, e.clientY);
       } else {
-        // Not at fit-view, return to fit
+        // Not at fit-view, return to fit (== minScale), never below.
         this.applyFitView();
       }
     });
@@ -292,7 +362,10 @@ export class GameEngine {
       if (!this.container) return;
 
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      const newScale = this.scale * zoomFactor;
+      const newScale = Math.max(
+        this.minScale,
+        Math.min(MAX_ZOOM, this.scale * zoomFactor),
+      );
 
       this.zoomAtPoint(newScale, e.clientX, e.clientY);
     });
